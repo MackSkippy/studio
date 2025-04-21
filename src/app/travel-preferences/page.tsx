@@ -18,8 +18,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 async function getTopCities(country: string): Promise<string[]> {
   // Replace with actual API call
   await new Promise(resolve => setTimeout(resolve, 500));
-  switch (country) {
-    case 'USA':
+  switch (country.toLowerCase()) {
+    case 'usa':
       return [
         "New York",
         "Los Angeles",
@@ -32,7 +32,7 @@ async function getTopCities(country: string): Promise<string[]> {
         "Dallas",
         "San Jose",
       ];
-    case 'Japan':
+    case 'japan':
       return [
         "Tokyo",
         "Yokohama",
@@ -45,7 +45,7 @@ async function getTopCities(country: string): Promise<string[]> {
         "Saitama",
         "Hiroshima",
       ];
-    case 'France':
+    case 'france':
       return [
         "Paris",
         "Marseille",
@@ -67,8 +67,8 @@ async function getTopCities(country: string): Promise<string[]> {
 async function getTopActivities(destination: string): Promise<string[]> {
   // Replace with actual API call
   await new Promise(resolve => setTimeout(resolve, 500));
-  switch (destination) {
-    case 'Tokyo':
+  switch (destination.toLowerCase()) {
+    case 'tokyo':
       return [
         "Visit the Sensō-ji Temple",
         "Explore the Meiji Shrine",
@@ -86,7 +86,7 @@ async function getTopActivities(destination: string): Promise<string[]> {
         "Experience a Traditional Tea Ceremony",
         "Shop in Akihabara",
       ];
-    case 'Paris':
+    case 'paris':
       return [
         "Visit the Eiffel Tower",
         "Explore the Louvre Museum",
@@ -104,7 +104,7 @@ async function getTopActivities(destination: string): Promise<string[]> {
         "Visit the Centre Pompidou",
         "Attend a cabaret show at the Moulin Rouge",
       ];
-    case 'New York':
+    case 'new york':
       return [
         "Visit Times Square",
         "See the Statue of Liberty",
@@ -177,7 +177,7 @@ export default function TravelPreferences() {
   const handleDestinationChange = useCallback(async (newDestination: string) => {
     setDestination(newDestination);
     // Check if the destination is a country
-    const isCountry = newDestination === 'Japan' || newDestination === 'USA' || newDestination === 'France'; // Example check
+    const isCountry = newDestination.toLowerCase() === 'japan' || newDestination.toLowerCase() === 'usa' || newDestination.toLowerCase() === 'france'; // Example check
 
     if (isCountry) {
       const cities = await getTopCities(newDestination);
