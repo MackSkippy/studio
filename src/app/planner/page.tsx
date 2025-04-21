@@ -25,6 +25,11 @@ export default function TravelPlanner() {
   const [feedback, setFeedback] = useState("");
 
   const handleGenerateItinerary = async () => {
+    if (!destination) {
+      alert("Please enter a destination.");
+      return;
+    }
+
     const input = {
       destination,
       departureLocation,
@@ -252,4 +257,5 @@ export default function TravelPlanner() {
     </div>
   );
 }
+
 
