@@ -19,7 +19,6 @@ const GenerateTravelItineraryInputSchema = z.object({
     .optional()
     .describe('Specific locations within the destination (e.g., specific cities or regions).'),
   desiredActivities: z.string().describe('Desired activities at the location(s).'),
-  nightlyCostRange: z.string().optional().describe('The desired nightly cost range for accommodation (e.g., $100-$200).'),
   feedback: z.string().optional().describe('User feedback on previous itineraries.'),
 });
 export type GenerateTravelItineraryInput = z.infer<typeof GenerateTravelItineraryInputSchema>;
@@ -61,7 +60,6 @@ const prompt = ai.definePrompt({
       specificLocations:
         z.string().optional().describe('Specific locations within the destination.'),
       desiredActivities: z.string().describe('Desired activities at the location(s).'),
-      nightlyCostRange: z.string().optional().describe('The desired nightly cost range for accommodation (e.g., $100-$200).'),
       feedback: z.string().optional().describe('User feedback on previous itineraries.'),
     }),
   },
@@ -80,7 +78,6 @@ Departure Location: {{{departureLocation}}}
 Dates: {{{dates}}}
 Specific Locations: {{{specificLocations}}}
 Desired Activities: {{{desiredActivities}}}
-Nightly Cost Range: {{{nightlyCostRange}}}
 Feedback: {{{feedback}}}
 
 Itinerary (JSON format):`,

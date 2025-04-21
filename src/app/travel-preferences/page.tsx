@@ -39,7 +39,7 @@ const topCities = {
     "Edinburgh",
     "Leicester"
   ],
-  "japan": [
+  "jp": [
     "Tokyo",
     "Yokohama",
     "Osaka",
@@ -51,7 +51,7 @@ const topCities = {
     "Saitama",
     "Hiroshima",
   ],
-  "france": [
+  "fr": [
     "Paris",
     "Marseille",
     "Lyon",
@@ -63,7 +63,7 @@ const topCities = {
     "Bordeaux",
     "Lille",
   ],
-  "india": [
+  "in": [
     "Mumbai",
     "Delhi",
     "Bangalore",
@@ -162,14 +162,13 @@ const predefinedActivities = [
 
 export default function TravelPreferences() {
   const [destination, setDestination] = useState("");
-  const [departureLocation, setDepartureLocation] = "Mountain View, CA";
+  const [departureLocation, setDepartureLocation] = useState("Mountain View, CA");
   const [departureDate, setDepartureDate] = useState<Date | undefined>(undefined);
   const [returnDate, setReturnDate] = useState<Date | undefined>(undefined);
   const [specificLocations, setSpecificLocations] = useState<string[]>([]);
   const [availableCities, setAvailableCities] = useState<string[]>([]);
   const [desiredActivities, setDesiredActivities] = useState<string[]>([]);
   const [availableActivities, setAvailableActivities] = useState<string[]>([]);
-  const [nightlyCostRange, setNightlyCostRange] = useState("");
   const [otherLocation, setOtherLocation] = useState("");
   const [useOtherLocation, setUseOtherLocation] = useState(false);
   const router = useRouter();
@@ -191,7 +190,6 @@ export default function TravelPreferences() {
       dates: departureDate && returnDate ? `${format(departureDate, "yyyy-MM-dd")} to ${format(returnDate, "yyyy-MM-dd")}` : '',
       specificLocations: allSpecificLocations.join(', '),
       desiredActivities: desiredActivities.join(', '),
-      nightlyCostRange,
       feedback: "",
     };
     const result = await generateTravelItinerary(input);
@@ -251,171 +249,184 @@ export default function TravelPreferences() {
   };
 
   return (
-    <div className="container mx-auto p-4"> {/* Added container div */}
-      <Card> {/* Added Card wrapper */}
-        <CardHeader> {/* Added CardHeader wrapper */}
-          <CardTitle>Travel Preferences</CardTitle>
-          <CardDescription>Fill out the form below to generate a personalized itinerary.</CardDescription>
-        </CardHeader> {/* Closed CardHeader */}
-        <CardContent className="space-y-6"> {/* Added CardContent wrapper with spacing */} 
+    
+      
+        
           
-          {/* Destination */}
-          <div className="space-y-2">
-            <Label htmlFor="destination">Destination</Label>
-            <Input id="destination" type="text" value={destination} onChange={(e) => handleDestinationChange(e.target.value)} placeholder="e.g., Tokyo, Japan" />
-          </div>
+            <CardTitle>Travel Preferences</CardTitle>
           
-          {/* Departure Location */}
-          <div className="space-y-2">
-             <Label htmlFor="departureLocation">Departure Location</Label>
-             <Input id="departureLocation" type="text" value={departureLocation} onChange={(e) => setDepartureLocation(e.target.value)} placeholder="e.g., New York, USA" />
-          </div>
           
-          {/* Dates */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-             <div className="space-y-2">
-                <Label>Departure Date</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant={"outline"}
-                      className={cn(
-                        "w-full justify-start text-left font-normal", // Changed width to full
-                        !departureDate && "text-muted-foreground"
-                      )}
-                    >
-                      {departureDate ? (
-                        format(departureDate, "PPP") // Use nicer format
-                      ) : (
-                        <span>Pick a date</span>
-                      )}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={departureDate}
-                      onSelect={setDepartureDate}
-                      disabled={returnDate ? { before: new Date(), after: returnDate } : { before: new Date() }}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
-             </div>
-             <div className="space-y-2">
-                <Label>Return Date</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant={"outline"}
-                      className={cn(
-                        "w-full justify-start text-left font-normal", // Changed width to full
-                        !returnDate && "text-muted-foreground"
-                      )}
-                    >
-                      {returnDate ? (
-                        format(returnDate, "PPP") // Use nicer format
-                      ) : (
-                        <span>Pick a date</span>
-                      )}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={returnDate}
-                      onSelect={setReturnDate}
-                      disabled={departureDate ? { before: departureDate } : { before: new Date() }}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
-             </div>
-          </div>
+            Fill out the form below to generate a personalized itinerary.
+          
+        
+        
+          
+            
+              
+                Destination
+              
+              <Input id="destination" type="text" value={destination} onChange={(e) => handleDestinationChange(e.target.value)} placeholder="e.g., Tokyo, Japan" />
+            
+          
+          
+            
+              
+                Departure Location
+              
+              <Input id="departureLocation" type="text" value={departureLocation} onChange={(e) => setDepartureLocation(e.target.value)} placeholder="e.g., New York, USA" />
+            
+          
+          
+            
+              
+                Departure Date
+              
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant={"outline"}
+                    className={cn(
+                      "w-full justify-start text-left font-normal", // Changed width to full
+                      !departureDate && "text-muted-foreground"
+                    )}
+                  >
+                    {departureDate ? (
+                      format(departureDate, "PPP") // Use nicer format
+                    ) : (
+                      
+                        Pick a date
+                      
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={departureDate}
+                    onSelect={setDepartureDate}
+                    disabled={returnDate ? { before: new Date(), after: returnDate } : { before: new Date() }}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            
+            
+              
+                Return Date
+              
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant={"outline"}
+                    className={cn(
+                      "w-full justify-start text-left font-normal", // Changed width to full
+                      !returnDate && "text-muted-foreground"
+                    )}
+                  >
+                    {returnDate ? (
+                      format(returnDate, "PPP") // Use nicer format
+                    ) : (
+                      
+                        Pick a date
+                      
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={returnDate}
+                    onSelect={setReturnDate}
+                    disabled={departureDate ? { before: departureDate } : { before: new Date() }}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            
+          
 
-          {/* Specific Locations */}
-          {(availableCities.length > 0 || useOtherLocation || !destination) && (
-            <div className="space-y-2">
-              <Label>Specific Locations (optional)</Label>
+          
+            
+              Specific Locations (optional)
               {availableCities.length > 0 && (
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-2 pt-2">
+                
                   {availableCities.map((city) => (
-                    <div key={city} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={`city-${city}`}
-                        checked={specificLocations.includes(city)}
-                        onCheckedChange={() => toggleSpecificLocation(city)}
-                      />
-                      <Label htmlFor={`city-${city}`} className="font-normal">{city}</Label>
-                    </div>
+                     
+                      
+                        
+                          
+                        
+                        
+                          {city}
+                        
+                      
+                    
                   ))}
-                </div>
+                
               )}
-              <div className="flex items-center space-x-2 pt-2">
-                 <Checkbox
-                   id="other-location-toggle"
-                   checked={useOtherLocation}
-                   onCheckedChange={(checked) => {
-                     setUseOtherLocation(Boolean(checked));
-                     if (!checked) {
-                       setOtherLocation("");
-                     }
-                   }}
-                 />
-                 <Label htmlFor="other-location-toggle" className="font-normal">Add another specific location</Label>
-              </div>
-              {useOtherLocation && (
-                <Input
-                  type="text"
-                  value={otherLocation}
-                  onChange={(e) => setOtherLocation(e.target.value)}
-                  placeholder="Enter specific location not listed above"
-                  className="mt-2"
-                />
-              )}
-            </div>
-          )}
-          {availableCities.length === 0 && !useOtherLocation && destination && (
-            <div className="space-y-2">
-                <Label htmlFor="specific-locations-text">Specific Locations (optional, comma-separated)</Label>
-                <Input
-                    id="specific-locations-text"
+              
+                
+                  
+                    
+                      
+                    
+                    
+                      Add another specific location
+                    
+                  
+                
+                {useOtherLocation && (
+                  <Input
                     type="text"
-                    value={specificLocations.join(', ')}
-                    onChange={(e) => setSpecificLocations(e.target.value.split(',').map(item => item.trim()).filter(Boolean))}
-                    placeholder="e.g., Shibuya, Asakusa"
-                />
-            </div>
+                    value={otherLocation}
+                    onChange={(e) => setOtherLocation(e.target.value)}
+                    placeholder="Enter specific location not listed above"
+                    className="mt-2"
+                  />
+                )}
+              
+            
+          
+          {availableCities.length === 0 && !useOtherLocation && destination && (
+            
+              
+                Specific Locations (optional, comma-separated)
+              
+              <Input
+                id="specific-locations-text"
+                type="text"
+                value={specificLocations.join(', ')}
+                onChange={(e) => setSpecificLocations(e.target.value.split(',').map(item => item.trim()).filter(Boolean))}
+                placeholder="e.g., Shibuya, Asakusa"
+              />
+            
           )}
 
-          {/* Desired Activities */}
-          <div className="space-y-2">
-             <Label>Desired Activities (select all that apply)</Label>
-             <div className="grid grid-cols-2 md:grid-cols-3 gap-2 pt-2">
+          
+            
+              Desired Activities (select all that apply)
+              
                 {predefinedActivities.map((activity) => (
-                   <div key={activity} className="flex items-center space-x-2">
-                      <Checkbox 
-                        id={`activity-${activity}`}
-                        checked={desiredActivities.includes(activity)}
-                        onCheckedChange={() => toggleDesiredActivity(activity)} 
-                      />
-                      <Label htmlFor={`activity-${activity}`} className="font-normal">{activity}</Label>
-                   </div>
+                   
+                      
+                        
+                          
+                        
+                        
+                          {activity}
+                        
+                      
+                    
                 ))}
-             </div>
-          </div>
+              
+            
           
-
           
-          {/* Nightly Cost Range */}
-          <div className="space-y-2">
-            <Label htmlFor="nightlyCostRange">Nightly Cost Range (optional)</Label>
-            <Input id="nightlyCostRange" type="text" value={nightlyCostRange} onChange={(e) => setNightlyCostRange(e.target.value)} placeholder="e.g., $100-$200" />
-          </div>
+            Generate Itinerary
           
-          <Button onClick={handleGenerateItinerary} disabled={!destination || !(departureDate && returnDate)} className="w-full">Generate Itinerary</Button>
-        </CardContent> {/* Closed CardContent */}
-      </Card> {/* Closed Card */}
-    </div> // Closed container div
+        
+      
+    
   );
 }
+
