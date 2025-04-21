@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { generateTravelItinerary } from "@/ai/flows/generate-travel-itinerary";
+// Updated import path and function name
+import { generateTravelPlan } from "@/ai/flows/generate-travel-plan"; 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -11,225 +12,59 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { useRouter } from "next/navigation";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label"; // Added Label import
+import { Label } from "@/components/ui/label";
 import { Toaster } from "@/components/ui/toaster";
 import { useToast } from "@/hooks/use-toast";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"; // Import Accordion components
 
-const topCities = {
-  "us": [
-    "New York",
-    "Los Angeles",
-    "Chicago",
-    "Houston",
-    "Phoenix",
-    "Philadelphia",
-    "San Antonio",
-    "San Diego",
-    "Dallas",
-    "San Jose",
+// Import data from JSON files
+import countryData from "@/data/countries.json";
+import activityData from "@/data/activities.json";
+
+const { countryCodeMap, alternativeCountryNames } = countryData;
+const { predefinedActivities } = activityData;
+
+// Define categories for activities (you can customize these)
+const activityCategories: { [key: string]: string[] } = {
+  "Sightseeing & Culture": [
+    "Scenery",
+    "Cultural hubs",
+    "Historical Landmarks",
+    "Museums",
+    "Festivals",
+    "Theme Parks",
   ],
-  "uk": [
-    "London",
-    "Birmingham",
-    "Glasgow",
-    "Liverpool",
-    "Bristol",
-    "Manchester",
-    "Sheffield",
-    "Leeds",
-    "Edinburgh",
-    "Leicester"
+  "Food & Drink": [
+    "Street Food",
+    "Fine Dining",
+    "Craft Beer/Wine/Liquor",
   ],
-  "jp": [
-    "Tokyo",
-    "Yokohama",
-    "Osaka",
-    "Nagoya",
-    "Sapporo",
-    "Fukuoka",
-    "Kawasaki",
-    "Kyoto",
-    "Saitama",
-    "Hiroshima",
+  "Shopping": [
+    "Unique Goods",
+    "Clothes Shopping",
   ],
-  "fr": [
-    "Paris",
-    "Marseille",
-    "Lyon",
-    "Toulouse",
-    "Nice",
-    "Nantes",
-    "Strasbourg",
-    "Montpellier",
-    "Bordeaux",
-    "Lille",
+  "Relaxation & Outdoors": [
+    "Pools and Beaches",
+    "Spas and Onsens",
+    "Hiking",
   ],
-  "in": [
-    "Mumbai",
-    "Delhi",
-    "Bangalore",
-    "Hyderabad",
-    "Chennai",
-    "Kolkata",
-    "Pune",
-    "Ahmedabad",
-    "Jaipur",
-    "Lucknow"
+  "Adventure & Entertainment": [
+    "Extreme Sports",
+    "Animal Encounters",
+    "Bars and Nightclubs",
+    "Sports",
   ]
 };
 
-async function getTopActivities(destination: string): Promise<string[]> {
-  await new Promise(resolve => setTimeout(resolve, 500));
-  switch (destination.toLowerCase()) {
-    case 'tokyo':
-      return [
-        "Visit the Sensō-ji Temple",
-        "Explore the Meiji Shrine",
-        "Wander through the Shibuya Crossing",
-        "Experience the Tsukiji Outer Market",
-        "Climb the Tokyo Skytree",
-        "Relax in the Shinjuku Gyoen National Garden",
-        "Discover the Ginza district",
-        "Visit the Imperial Palace",
-        "Explore the Ueno Park and Museums",
-        "Enjoy the nightlife in Roppongi",
-        "Take a day trip to Hakone",
-        "Visit the Ghibli Museum",
-        "Attend a Sumo Wrestling Match",
-        "Experience a Traditional Tea Ceremony",
-        "Shop in Akihabara",
-      ];
-    case 'paris':
-      return [
-        "Visit the Eiffel Tower",
-        "Explore the Louvre Museum",
-        "Stroll along the Champs-Élysées",
-        "Visit the Notre-Dame Cathedral",
-        "Explore the Montmartre neighborhood",
-        "Visit the Sacré-Cœur Basilica",
-        "Take a boat tour on the Seine",
-        "Visit the Palace of Versailles",
-        "Explore the Latin Quarter",
-        "Visit the Musée d'Orsay",
-        "Relax in the Jardin du Luxembourg",
-        "Visit the Arc de Triomphe",
-        "Explore the Marais district",
-        "Visit the Centre Pompidou",
-        "Attend a cabaret show at the Moulin Rouge",
-      ];
-    case 'new york':
-      return [
-        "Visit Times Square",
-        "See the Statue of Liberty",
-        "Walk through Central Park",
-        "Visit the Metropolitan Museum of Art",
-        "See a Broadway Show",
-        "Visit the Empire State Building",
-        "Explore Greenwich Village",
-        "Visit the 9/11 Memorial & Museum",
-        "Walk the Brooklyn Bridge",
-        "Visit the American Museum of Natural History",
-        "Explore the High Line",
-        "Visit the One World Observatory",
-        "Explore the Lower East Side",
-        "Visit the Guggenheim Museum",
-        "See a Yankee Game"
-      ];
-    default:
-      return [];
-  }
+// Function to get activities based on destination (Placeholder for potential future AI integration)
+async function getActivitiesForDestination(destination: string): Promise<string[]> {
+  // Simulating fetching or dynamic generation
+  await new Promise(resolve => setTimeout(resolve, 100)); // Simulate async call
+  // For now, return the predefined list, but this could be an AI call
+  // based on destination in the future.
+  console.log(`Fetching activities for: ${destination}`); // Keep console log for now
+  return predefinedActivities;
 }
-
-const predefinedActivities = [
-  "Scenery",
-  "Cultural hubs",
-  "Historical Landmarks",
-  "Museums",
-  "Street Food",
-  "Fine Dining",
-  "Unique Goods",
-  "Clothes Shopping",
-  "Pools and Beaches",
-  "Spas and Onsens",
-  "Hiking",
-  "Extreme Sports",
-  "Animal Encounters",
-  "Festivals",
-  "Theme Parks",
-  "Bars and Nightclubs",
-  "Craft Beer/Wine/Liquor",
-  "Sports",
-];
-
-const countryCodeMap: { [key: string]: string[] } = {
-  "us": [
-    "New York",
-    "Los Angeles",
-    "Chicago",
-    "Houston",
-    "Phoenix",
-    "Philadelphia",
-    "San Antonio",
-    "San Diego",
-    "Dallas",
-    "San Jose",
-  ],
-  "uk": [
-    "London",
-    "Birmingham",
-    "Glasgow",
-    "Liverpool",
-    "Bristol",
-    "Manchester",
-    "Sheffield",
-    "Leeds",
-    "Edinburgh",
-    "Leicester"
-  ],
-  "jp": [
-    "Tokyo",
-    "Yokohama",
-    "Osaka",
-    "Nagoya",
-    "Sapporo",
-    "Fukuoka",
-    "Kawasaki",
-    "Kyoto",
-    "Saitama",
-    "Hiroshima",
-  ],
-  "fr": [
-    "Paris",
-    "Marseille",
-    "Lyon",
-    "Toulouse",
-    "Nice",
-    "Nantes",
-    "Strasbourg",
-    "Montpellier",
-    "Bordeaux",
-    "Lille",
-  ],
-  "in": [
-    "Mumbai",
-    "Delhi",
-    "Bangalore",
-    "Hyderabad",
-    "Chennai",
-    "Kolkata",
-    "Pune",
-    "Ahmedabad",
-    "Jaipur",
-    "Lucknow"
-  ]
-};
-
-const alternativeCountryNames: { [key: string]: string } = {
-  "united states": "us",
-  "usa": "us",
-  "united kingdom": "uk",
-  "great britain": "uk",
-};
 
 export default function TravelPreferences() {
   const [destination, setDestination] = useState("");
@@ -239,24 +74,27 @@ export default function TravelPreferences() {
   const [specificLocations, setSpecificLocations] = useState<string[]>([]);
   const [availableCities, setAvailableCities] = useState<string[]>([]);
   const [desiredActivities, setDesiredActivities] = useState<string[]>([]);
-  const [availableActivities, setAvailableActivities] = useState<string[]>([]);
+  // const [availableActivities, setAvailableActivities] = useState<string[]>([]); // We'll use predefinedActivities for now
   const [otherLocation, setOtherLocation] = useState("");
   const [useOtherLocation, setUseOtherLocation] = useState(false);
   const router = useRouter();
-    const { toast } = useToast();
+  const { toast } = useToast();
 
-  const handleGenerateItinerary = async () => {
+  // Renamed handler function
+  const handleGeneratePlan = async () => { 
     if (!destination) {
-          toast({
+      toast({
         title: "Error!",
         description: "Please enter a destination.",
+        variant: "destructive",
       });
       return;
     }
 
     let allSpecificLocations = [...specificLocations];
     if (useOtherLocation && otherLocation) {
-      allSpecificLocations.push(otherLocation);
+      // Split by comma if user entered multiple comma-separated values
+      allSpecificLocations.push(...otherLocation.split(',').map(loc => loc.trim()).filter(Boolean)); 
     }
 
     const input = {
@@ -267,18 +105,33 @@ export default function TravelPreferences() {
       desiredActivities: desiredActivities.join(', '),
       feedback: "",
     };
-    const result = await generateTravelItinerary(input);
-    let generatedItinerary: any;
+
     try {
-      generatedItinerary = JSON.parse(JSON.stringify(result?.itinerary)) || "No itinerary generated.";
-    } catch (e) {
-      generatedItinerary = "No itinerary generated.";
+      // Add loading state here if needed
+      const result = await generateTravelPlan(input); // Use renamed function
+      let generatedPlan: any; // Renamed variable
+      try {
+         // Use result.plan now
+        generatedPlan = JSON.parse(JSON.stringify(result?.plan)) || "No plan generated.";
+      } catch (parseError) {
+        console.error("Failed to parse plan:", parseError);
+        generatedPlan = "Could not process plan.";
+      }
+
+      // Store the plan in session storage (renamed key)
+      sessionStorage.setItem('generatedPlan', JSON.stringify(generatedPlan)); 
+      router.push(`/planner`);
+
+    } catch (error) {
+      console.error("Error generating plan:", error);
+      toast({
+        title: "Generation Failed",
+        // Updated message
+        description: "Could not generate plan. Please try again.", 
+        variant: "destructive",
+      });
+      // Add cleanup for loading state here
     }
-
-    // Store the itinerary in session storage
-    sessionStorage.setItem('generatedItinerary', JSON.stringify(generatedItinerary));
-
-    router.push(`/planner`);
   };
 
   const handleDestinationChange = useCallback(async (newDestination: string) => {
@@ -286,30 +139,32 @@ export default function TravelPreferences() {
     const destinationLower = newDestination.toLowerCase();
 
     // Standardize alternative names
-    const standardizedDestination = alternativeCountryNames[destinationLower] || destinationLower;
+    const standardizedDestination = (alternativeCountryNames as { [key: string]: string })[destinationLower] || destinationLower;
 
     // Check if the destination is a country
     const isCountry = Object.keys(countryCodeMap).includes(standardizedDestination);
 
     let cities = [];
     if (isCountry) {
-      cities = countryCodeMap[standardizedDestination as keyof typeof countryCodeMap] || [];
+      // Type assertion needed as countryCodeMap keys are checked
+      cities = (countryCodeMap as { [key: string]: string[] })[standardizedDestination as keyof typeof countryCodeMap] || [];
     }
 
     setAvailableCities(cities);
 
-    const activities = await getTopActivities(newDestination);
-    setAvailableActivities(activities);
+    // // Dynamic activities fetching (kept for future reference)
+    // const activities = await getActivitiesForDestination(newDestination);
+    // setAvailableActivities(activities);
 
     setSpecificLocations([]); // Clear specific locations when destination changes
     setDesiredActivities([]); // Clear specific activities when destination changes
-  }, []);
+    setUseOtherLocation(false); // Reset 'other location' flag
+    setOtherLocation(""); // Reset 'other location' input
 
-  useEffect(() => {
-    if (destination) {
-      handleDestinationChange(destination);
-    }
-  }, [destination, handleDestinationChange]);
+  }, []); // Removed dependencies as they are now stable imports or setters
+
+  // Note: Removed the useEffect that called handleDestinationChange on destination change,
+  // as the onChange handler on the input field now calls it directly.
 
   const toggleSpecificLocation = (location: string) => {
     setSpecificLocations(prev =>
@@ -328,182 +183,175 @@ export default function TravelPreferences() {
   };
 
   return (
-    
-      
-        
-          
-            
-              
-                Travel Preferences
-              
-            
-          
-          
-            Fill out the form below to generate a personalized itinerary.
-          
-        
-      
-      
-        
-          
-            Destination
-          
-          <Input id="destination" type="text" value={destination} onChange={(e) => handleDestinationChange(e.target.value)} placeholder="e.g., Tokyo, Japan" />
-        
-        
-          
-            Departure Location
-          
-          <Input id="departureLocation" type="text" value={departureLocation} onChange={(e) => setDepartureLocation(e.target.value)} placeholder="e.g., New York, USA" />
-        
-        
-          
-            Departure Date
-          
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant={"outline"}
-                className={cn(
-                  "w-full justify-start text-left font-normal", // Changed width to full
-                  !departureDate && "text-muted-foreground"
-                )}
-              >
-                {departureDate ? (
-                  format(departureDate, "PPP") // Use nicer format
-                ) : (
-                  
-                    Pick a date
-                  
-                )}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar
-                mode="single"
-                selected={departureDate}
-                onSelect={setDepartureDate}
-                disabled={returnDate ? { before: new Date(), after: returnDate } : { before: new Date() }}
-                initialFocus
-              />
-            </PopoverContent>
-          </Popover>
-        
-        
-          
-            Return Date
-          
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant={"outline"}
-                className={cn(
-                  "w-full justify-start text-left font-normal", // Changed width to full
-                  !returnDate && "text-muted-foreground"
-                )}
-              >
-                {returnDate ? (
-                  format(returnDate, "PPP") // Use nicer format
-                ) : (
-                  
-                    Pick a date
-                  
-                )}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar
-                mode="single"
-                selected={returnDate}
-                onSelect={setReturnDate}
-                disabled={departureDate ? { before: departureDate } : { before: new Date() }}
-                initialFocus
-              />
-            </PopoverContent>
-          </Popover>
-        
+    <Card className="w-full max-w-2xl mx-auto my-8">
+      <CardHeader>
+        <CardTitle>
+          <h1>Travel Preferences</h1>
+        </CardTitle>
+        <CardDescription>
+          Fill out the form below to generate a personalized plan.
+        </CardDescription>
+      </CardHeader>
 
-        
-          
-            Specific Locations (optional)
-          
+      <CardContent className="space-y-6"> {/* Increased spacing */}
+        <div className="space-y-2">
+          <Label htmlFor="destination">Destination</Label>
+          <Input id="destination" type="text" value={destination} onChange={(e) => handleDestinationChange(e.target.value)} placeholder="e.g., Tokyo, Japan, France" />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="departureLocation">Departure Location</Label>
+          <Input id="departureLocation" type="text" value={departureLocation} onChange={(e) => setDepartureLocation(e.target.value)} placeholder="e.g., Mountain View, CA" />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4"> {/* Grid for dates */}
+          <div className="space-y-2">
+            <Label htmlFor="departureDate">Departure Date</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant={"outline"}
+                  className={cn(
+                    "w-full justify-start text-left font-normal",
+                    !departureDate && "text-muted-foreground"
+                  )}
+                >
+                  {departureDate ? format(departureDate, "PPP") : <span>Pick a date</span>}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={departureDate}
+                  onSelect={setDepartureDate}
+                  disabled={returnDate ? { before: new Date(), after: returnDate } : { before: new Date() }}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="returnDate">Return Date</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant={"outline"}
+                  className={cn(
+                    "w-full justify-start text-left font-normal",
+                    !returnDate && "text-muted-foreground"
+                  )}
+                >
+                  {returnDate ? format(returnDate, "PPP") : <span>Pick a date</span>}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={returnDate}
+                  onSelect={setReturnDate}
+                  disabled={departureDate ? { before: departureDate } : { before: new Date() }}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+        </div>
+
+        {/* Specific Locations Section - Conditional Rendering */} 
+        {destination && (
+             <div className="space-y-4 pt-4 border-t"> {/* Added separator */}
+            <Label>Specific Locations (Optional)</Label>
             {availableCities.length > 0 && (
-              
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                 {availableCities.map((city) => (
-                  
+                  <div key={city} className="flex items-center space-x-2">
                     <Checkbox
                       id={`city-${city}`}
                       checked={specificLocations.includes(city)}
                       onCheckedChange={() => toggleSpecificLocation(city)}
                     />
-                    
-                      {city}
-                    
-                  
+                    <Label htmlFor={`city-${city}`} className="font-normal">{city}</Label>
+                  </div>
                 ))}
-              
+              </div>
             )}
-            
+
+            {/* Option to add other locations */} 
+            <div className="flex items-center space-x-2 pt-2">
               <Checkbox
                 id="other-location-checkbox"
                 checked={useOtherLocation}
-                onCheckedChange={(checked) => setUseOtherLocation(Boolean(checked))}
+                onCheckedChange={(checked) => {
+                    setUseOtherLocation(Boolean(checked));
+                    if (!checked) setOtherLocation(""); // Clear input if unchecked
+                }}
               />
-              
-                Add another specific location
-              
-            
+              <Label htmlFor="other-location-checkbox" className="font-normal">
+                {availableCities.length > 0 ? 'Add another specific location?' : 'Specify locations?'}
+              </Label>
+            </div>
+
+            {/* Input for other location */} 
             {useOtherLocation && (
               <Input
                 type="text"
                 value={otherLocation}
                 onChange={(e) => setOtherLocation(e.target.value)}
-                placeholder="Enter specific location not listed above"
+                placeholder={availableCities.length > 0 ? "Enter other location..." : "e.g., Shibuya, Asakusa (comma-separated)"}
                 className="mt-2"
               />
             )}
-          
-          {availableCities.length === 0 && !useOtherLocation && destination && (
-            
-              
-                Specific Locations (optional, comma-separated)
-              
-              <Input
-                id="specific-locations-text"
-                type="text"
-                value={specificLocations.join(', ')}
-                onChange={(e) => setSpecificLocations(e.target.value.split(',').map(item => item.trim()).filter(Boolean))}
-                placeholder="e.g., Shibuya, Asakusa"
-              />
-            
-          )}
 
-          
-            Desired Activities (select all that apply)
-            
-              {predefinedActivities.map((activity) => (
-                
-                  <Checkbox
-                    id={`activity-${activity}`}
-                    checked={desiredActivities.includes(activity)}
-                    onCheckedChange={() => toggleDesiredActivity(activity)}
-                  />
-                  
-                    {activity}
-                  
-                
+             {/* Fallback text input if destination is not a recognized country AND user hasn't checked 'other' */} 
+            {availableCities.length === 0 && !useOtherLocation && (
+                 <p className="text-sm text-muted-foreground">If you want to specify particular places within {destination}, check the box above and enter them.</p>
+             )}
+          </div>
+        )}
+
+        {/* Desired Activities Section - Using Accordion */} 
+        {destination && ( 
+          <div className="space-y-4 pt-4 border-t"> {/* Added separator */}
+            <Label>Desired Activities (Optional - Select all that apply)</Label>
+            <Accordion type="multiple" className="w-full">
+              {Object.entries(activityCategories).map(([category, activities]) => (
+                <AccordionItem value={category} key={category}>
+                  <AccordionTrigger>{category}</AccordionTrigger>
+                  <AccordionContent>
+                    <div className="grid grid-cols-2 gap-2 p-2">
+                      {activities.map((activity) => {
+                        // Check if the activity exists in the main predefined list 
+                        if (predefinedActivities.includes(activity)) {
+                          return (
+                            <div key={activity} className="flex items-center space-x-2">
+                              <Checkbox
+                                id={`activity-${activity}`}
+                                checked={desiredActivities.includes(activity)}
+                                onCheckedChange={() => toggleDesiredActivity(activity)}
+                              />
+                              <Label htmlFor={`activity-${activity}`} className="font-normal">
+                                {activity}
+                              </Label>
+                            </div>
+                          );
+                        }
+                        return null; // Don't render if activity isn't in the master list
+                      })}
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
               ))}
-            
-          
-          <Button onClick={handleGenerateItinerary}>
-            Generate Itinerary
-          </Button>
-        
-      
-        
-        
-      
-    
+            </Accordion>
+          </div>
+        )}
+
+        {/* Updated button text and handler */}
+        <Button onClick={handleGeneratePlan} className="w-full" disabled={!destination}> 
+          Generate Plan
+        </Button>
+      </CardContent>
+      <Toaster />
+    </Card>
   );
 }
-
