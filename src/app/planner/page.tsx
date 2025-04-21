@@ -13,6 +13,7 @@ export default function TravelPlanner() {
   // const initialItinerary = searchParams.get('itinerary') || "";
   const [itinerary, setItinerary] = useState<any>(''); //initialItinerary ? JSON.parse(initialItinerary) : '');
   const [feedback, setFeedback] = useState("");
+  const [isLoading, setIsLoading] = useState(false); // State for loading indicator
 
   useEffect(() => {
     // Retrieve the itinerary from session storage
@@ -30,48 +31,82 @@ export default function TravelPlanner() {
   }, []);
 
   const handleRefineItinerary = async () => {
+    setIsLoading(true); // Start loading
     const input = {
       itinerary: JSON.stringify(itinerary),
       feedback,
-      preferences: ""
+      preferences: "" // Assuming preferences might be added later
     };
-    const result = await refineTravelItinerary(input);
-    setItinerary(result?.refinedItinerary || "No itinerary refined.");
+    try {
+      const result = await refineTravelItinerary(input);
+      setItinerary(result?.refinedItinerary || "No itinerary refined.");
+      setFeedback(""); // Clear feedback after successful refinement
+    } catch (error) {
+        console.error("Error refining itinerary:", error);
+        // Optionally, show a toast or error message to the user
+        setItinerary(prev => ({ ...prev, error: "Failed to refine itinerary." })); // Append error info if possible
+    } finally {
+      setIsLoading(false); // Stop loading regardless of success or error
+    }
   };
 
   const renderItineraryOutline = () => {
     try {
       if (itinerary === '') {
-        return <Textarea value={"No itinerary generated yet"} readOnly className="min-h-[200px]" />;
+        return <Textarea value={"Loading itinerary..."} readOnly className="min-h-[200px]" />;
       }
 
       if (typeof itinerary === 'string') {
-        return <Textarea value={itinerary} readOnly className="min-h-[200px]" />;
+         // Handle specific string messages
+         if (itinerary.startsWith("No itinerary generated yet") || itinerary.startsWith("Error loading itinerary")) {
+            return <Textarea value={itinerary} readOnly className="min-h-[200px]" />;
+         }
+         // Attempt to parse if it might be a JSON string that failed initial parsing
+         try {
+             const parsed = JSON.parse(itinerary);
+             setItinerary(parsed); // Update state if parsing succeeds
+             // Re-render will happen, might need better handling to avoid loops
+             return <Textarea value={"Parsing itinerary..."} readOnly className="min-h-[200px]" />;
+         } catch (e) {
+             return <Textarea value={\`Invalid itinerary format: ${itinerary}\`} readOnly className="min-h-[200px]" />;
+         }
+      }
+
+      if (itinerary.error) { // Check for error appended during refinement failure
+          return <Textarea value={`Error: ${itinerary.error}
+
+Previous Itinerary:
+${JSON.stringify(itinerary, null, 2)}`} readOnly className="min-h-[200px]" />;
       }
 
       if (!Array.isArray(itinerary)) {
-        return <Textarea value="Invalid itinerary format." readOnly className="min-h-[200px]" />;
+        // It might be an object if not an array, try stringifying for display
+        return <Textarea value={\`Invalid itinerary format: ${JSON.stringify(itinerary, null, 2)}\`} readOnly className="min-h-[200px]" />;
+      }
+
+      if (itinerary.length === 0) {
+          return <Textarea value={"Itinerary is empty."} readOnly className="min-h-[200px]" />;
       }
 
       return (
-        <ul>
+        <ul className="space-y-4">
           {itinerary.map((item, index) => (
-            <li key={index} className="mb-4">
-              <h3 className="font-semibold">{item.day}</h3>
-              <p className="mb-2">{item.description}</p>
+            <li key={index} className="border-b pb-4 last:border-b-0 last:pb-0">
+              <h3 className="font-semibold text-lg mb-1">{item.day}</h3>
+              <p className="mb-2 text-sm text-gray-600">{item.description}</p>
 
               {/* Points of Interest */}
               {item.pointsOfInterest && item.pointsOfInterest.length > 0 && (
-                <div>
-                  <h4 className="font-semibold">Points of Interest:</h4>
-                  <ul>
+                <div className="mt-2">
+                  <h4 className="font-medium text-md mb-1">Points of Interest:</h4>
+                  <ul className="list-disc list-inside space-y-1">
                     {item.pointsOfInterest.map((poi, poiIndex) => (
-                      <li key={poiIndex}>
+                      <li key={poiIndex} className="text-sm">
                         <a
-                          href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(poi.location)}`}
+                          href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(poi.name + ', ' + poi.location)}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-blue-500"
+                          className="text-blue-600 hover:underline"
                         >
                           {poi.name} ({poi.location})
                         </a>
@@ -84,9 +119,9 @@ export default function TravelPlanner() {
               {/* Transportation */}
               {item.transportation && (
                 <div className="mt-2">
-                  <h4 className="font-semibold">Transportation:</h4>
-                  <p>Type: {item.transportation.type}</p>
-                  <p>
+                  <h4 className="font-medium text-md mb-1">Transportation:</h4>
+                  <p className="text-sm">Type: {item.transportation.type}</p>
+                  <p className="text-sm">
                     Departure Location:{" "}
                     <a
                       href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
@@ -94,12 +129,12 @@ export default function TravelPlanner() {
                       )}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-blue-500"
+                      className="text-blue-600 hover:underline"
                     >
                       {item.transportation.departureLocation}
                     </a>
                   </p>
-                  <p>
+                  <p className="text-sm">
                     Arrival Location:{" "}
                     <a
                       href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
@@ -107,13 +142,13 @@ export default function TravelPlanner() {
                       )}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-blue-500"
+                      className="text-blue-600 hover:underline"
                     >
                       {item.transportation.arrivalLocation}
                     </a>
                   </p>
-                  <p>Departure Time: {item.transportation.departureTime}</p>
-                  <p>Arrival Time: {item.transportation.arrivalTime}</p>
+                  <p className="text-sm">Departure Time: {item.transportation.departureTime}</p>
+                  <p className="text-sm">Arrival Time: {item.transportation.arrivalTime}</p>
                 </div>
               )}
             </li>
@@ -121,16 +156,23 @@ export default function TravelPlanner() {
         </ul>
       );
     } catch (error) {
-      return <Textarea value={itinerary} readOnly className="min-h-[200px]" />;
+       console.error("Error rendering itinerary:", error);
+       // Display the raw itinerary data if rendering fails
+       const rawItinerary = typeof itinerary === 'string' ? itinerary : JSON.stringify(itinerary, null, 2);
+       return <Textarea value={\`Error rendering itinerary. Raw data:
+
+${rawItinerary}\`} readOnly className="min-h-[200px]" />;
     }
   };
 
+
   return (
-    <div className="container py-8">
-      <h1 className="text-2xl font-bold mb-4">Generated Itinerary</h1>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div className="container mx-auto py-8 px-4">
+      <h1 className="text-3xl font-bold mb-6 text-center">Generated Itinerary</h1>
+      <div className="grid grid-cols-1 gap-6">
         <div>
-          <Card>
+          {/* Added margin-bottom mb-6 */}
+          <Card className="mb-6">
             <CardHeader>
               <CardTitle>Itinerary</CardTitle>
               <CardDescription>View your personalized travel itinerary.</CardDescription>
@@ -144,9 +186,16 @@ export default function TravelPlanner() {
               <CardTitle>Feedback</CardTitle>
               <CardDescription>Provide feedback to refine the itinerary.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-2">
-              <Textarea value={feedback} onChange={(e) => setFeedback(e.target.value)} placeholder="e.g., Too many activities, not enough free time" />
-              <Button onClick={handleRefineItinerary}>Refine Itinerary</Button>
+            <CardContent className="space-y-4">
+              <Textarea
+                value={feedback}
+                onChange={(e) => setFeedback(e.target.value)}
+                placeholder="e.g., Add more cultural activities on Day 2, Find cheaper restaurants, I prefer trains over buses."
+                disabled={isLoading} // Disable textarea during loading
+              />
+              <Button onClick={handleRefineItinerary} disabled={isLoading || !feedback.trim()}>
+                {isLoading ? 'Refining...' : 'Refine Itinerary'}
+              </Button>
             </CardContent>
           </Card>
         </div>
@@ -154,3 +203,4 @@ export default function TravelPlanner() {
     </div>
   );
 }
+

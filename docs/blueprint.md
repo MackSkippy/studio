@@ -9,24 +9,3 @@
 - Feedback Collection: Collect user feedback on each generated itinerary to improve the planning process.
 
 ## Style Guidelines:
-
-- Primary color: Clean white or light gray for a modern feel.
-- Secondary color: Calm and trustworthy blue (#3498db) for interactive elements.
-- Accent: Teal (#008080) for highlights and call-to-action buttons.
-- Clean and minimalist layout to ensure focus on content.
-- Use modern, outlined icons to represent travel elements.
-- Subtle transitions and animations to enhance user experience.
-
-## Original User Request:
-Grant
-A travel concierge app with modern design which
-
-1.Understands where a user wants to visit, and where they're from, can ask questions if they're unsure
-2. Understand specific or general dates of travel
-3. Determine if they want specific locations within a destination (e.g. Japan vs just Tokyo)
-4. Will understand desired activities at the location(s)
-5. Will give a general itinerary
-6. The user will give feedback
-7. The app will search for recommended locations to stay (neighborhoods/hotels) and any connecting transportation (flights or trains)
-8. The app will then give a report on the itinerary with websites to contact for hotels or tickets
-  
