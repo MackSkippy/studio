@@ -45,7 +45,7 @@ export default function TravelPreferences() {
   const [destination, setDestination] = useState("");
   const [destinationArrivalCity, setDestinationArrivalCity] = useState(""); // new state
   const [departureCity, setDepartureCity] = useState(""); // new state
-  const [departureLocation, setDepartureLocation] = useState("Mountain View, CA"); // Consider making this dynamic or empty default
+  //const [departureLocation, setDepartureLocation] = useState("Mountain View, CA"); // Consider making this dynamic or empty default
   const [arrivalDate, setArrivalDate] = useState<Date | undefined>(undefined);
   const [returnDate, setReturnDate] = useState<Date | undefined>(undefined);
   const [numberOfDays, setNumberOfDays] = useState<string>(""); // Use string for input control, parse later
@@ -96,7 +96,7 @@ export default function TravelPreferences() {
       destination: destination.trim(),
       departureCity: departureCity.trim(),
       arrivalCity: destinationArrivalCity.trim(),
-      departureLocation: departureLocation.trim(),
+     // departureLocation: departureLocation.trim(),
       dates: datesString,
       specificLocations: allSpecificLocations.join(', '),
       desiredActivities: desiredActivities.join(', '),
@@ -252,7 +252,7 @@ export default function TravelPreferences() {
            </div>
 
           {/* Departure Location Input */}
-          <div className="space-y-1.5">
+          {/*<div className="space-y-1.5">
             <Label htmlFor="departureLocation" className="font-semibold">Departure Location</Label>
             <Input
               id="departureLocation"
@@ -262,7 +262,7 @@ export default function TravelPreferences() {
               placeholder="e.g., Your City, State/Country"
               disabled={isLoading}
             />
-          </div>
+          </div>*/}
 
           {/* Date Selection Grid - Responsive */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-6">
@@ -417,3 +417,4 @@ export default function TravelPreferences() {
     </>
   );
 }
+

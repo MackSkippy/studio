@@ -14,7 +14,7 @@ const GenerateTravelPlanInputSchema = z.object({
   destination: z.string().describe('The desired travel destination.'),
   departureCity: z.string().describe('The city where the user is departing from.'), // new field
   arrivalCity: z.string().describe('The city where the user is arriving to.'), // new field
-  departureLocation: z.string().describe('The user current location.'),
+  //departureLocation: z.string().describe('The user current location.'),
   dates: z.string().describe('The travel dates or date range.'),
   specificLocations: z
     .string()
@@ -68,7 +68,7 @@ const prompt = ai.definePrompt({
       destination: z.string().describe('The desired travel destination.'),
       departureCity: z.string().describe('The city where the user is departing from.'), // new field
       arrivalCity: z.string().describe('The city where the user is arriving to.'), // new field
-      departureLocation: z.string().describe('The user current location.'),
+      //departureLocation: z.string().describe('The user current location.'),
       dates: z.string().describe('The travel dates or date range.'),
       specificLocations:
         z.string().optional().describe('Specific locations within the destination.'),
@@ -91,7 +91,6 @@ User Preferences:
 Destination: {{{destination}}}
 Departure City: {{{departureCity}}}
 Arrival City: {{{arrivalCity}}}
-Departure Location: {{{departureLocation}}}
 Dates: {{{dates}}}
 Specific Locations: {{{specificLocations}}}
 Desired Activities: {{{desiredActivities}}}
