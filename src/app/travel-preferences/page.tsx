@@ -43,8 +43,8 @@ const SESSION_STORAGE_PLAN_KEY = 'generatedPlan';
 
 export default function TravelPreferences() {
   const [destination, setDestination] = useState("");
+  const [destinationArrivalCity, setDestinationArrivalCity] = useState(""); // new state
   const [departureCity, setDepartureCity] = useState(""); // new state
-  const [arrivalCity, setArrivalCity] = useState(""); // new state
   const [departureLocation, setDepartureLocation] = useState("Mountain View, CA"); // Consider making this dynamic or empty default
   const [arrivalDate, setArrivalDate] = useState<Date | undefined>(undefined);
   const [returnDate, setReturnDate] = useState<Date | undefined>(undefined);
@@ -94,6 +94,8 @@ export default function TravelPreferences() {
 
     const input = {
       destination: destination.trim(),
+      departureCity: departureCity.trim(),
+      arrivalCity: destinationArrivalCity.trim(),
       departureLocation: departureLocation.trim(),
       dates: datesString,
       specificLocations: allSpecificLocations.join(', '),
@@ -223,6 +225,19 @@ export default function TravelPreferences() {
             />
           </div>
 
+           {/* Destination Arrival City Input */}
+           <div className="space-y-1.5">
+             <Label htmlFor="destinationArrivalCity" className="font-semibold">Destination Arrival City</Label>
+             <Input
+               id="destinationArrivalCity"
+               type="text"
+               value={destinationArrivalCity}
+               onChange={(e) => setDestinationArrivalCity(e.target.value)}
+               placeholder="e.g., Tokyo, Los Angeles, Berlin"
+               disabled={isLoading}
+             />
+           </div>
+
            {/* Departure City Input */}
            <div className="space-y-1.5">
              <Label htmlFor="departureCity" className="font-semibold">Departure City</Label>
@@ -232,19 +247,6 @@ export default function TravelPreferences() {
                value={departureCity}
                onChange={(e) => setDepartureCity(e.target.value)}
                placeholder="e.g., New York, London, Paris"
-               disabled={isLoading}
-             />
-           </div>
-
-           {/* Arrival City Input */}
-           <div className="space-y-1.5">
-             <Label htmlFor="arrivalCity" className="font-semibold">Arrival City</Label>
-             <Input
-               id="arrivalCity"
-               type="text"
-               value={arrivalCity}
-               onChange={(e) => setArrivalCity(e.target.value)}
-               placeholder="e.g., Tokyo, Los Angeles, Berlin"
                disabled={isLoading}
              />
            </div>
