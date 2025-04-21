@@ -58,27 +58,60 @@ export default function TravelPlanner() {
           {itinerary.map((item, index) => (
             <li key={index} className="mb-4">
               <h3 className="font-semibold">{item.day}</h3>
-              {/* Add Google Maps links to the description */}
-              <p className="mb-2">
-                {item.description.split(/(Senso-ji Temple|Tokyo National Museum|Tokyo Skytree)/g).map((part, i) => {
-                  if (part === "Senso-ji Temple") {
-                    return <a key={i} href="https://www.google.com/maps/search/?api=1&query=Senso-ji+Temple+Tokyo" target="_blank" rel="noopener noreferrer" className="text-blue-500">Senso-ji Temple</a>;
-                  } else if (part === "Tokyo National Museum") {
-                    return <a key={i} href="https://www.google.com/maps/search/?api=1&query=Tokyo+National+Museum" target="_blank" rel="noopener noreferrer" className="text-blue-500">Tokyo National Museum</a>;
-                  } else if (part === "Tokyo Skytree") {
-                    return <a key={i} href="https://www.google.com/maps/search/?api=1&query=Tokyo+Skytree" target="_blank" rel="noopener noreferrer" className="text-blue-500">Tokyo Skytree</a>;
-                  } else {
-                    return part;
-                  }
-                })}
-              </p>
+              <p className="mb-2">{item.description}</p>
 
+              {/* Points of Interest */}
+              {item.pointsOfInterest && item.pointsOfInterest.length > 0 && (
+                <div>
+                  <h4 className="font-semibold">Points of Interest:</h4>
+                  <ul>
+                    {item.pointsOfInterest.map((poi, poiIndex) => (
+                      <li key={poiIndex}>
+                        <a
+                          href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(poi.location)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-500"
+                        >
+                          {poi.name} ({poi.location})
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Transportation */}
               {item.transportation && (
                 <div className="mt-2">
                   <h4 className="font-semibold">Transportation:</h4>
                   <p>Type: {item.transportation.type}</p>
-                  <p>Departure Location: <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.transportation.departureLocation)}`} target="_blank" rel="noopener noreferrer" className="text-blue-500">{item.transportation.departureLocation}</a></p>
-                  <p>Arrival Location: <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.transportation.arrivalLocation)}`} target="_blank" rel="noopener noreferrer" className="text-blue-500">{item.transportation.arrivalLocation}</a></p>
+                  <p>
+                    Departure Location:{" "}
+                    <a
+                      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                        item.transportation.departureLocation
+                      )}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-500"
+                    >
+                      {item.transportation.departureLocation}
+                    </a>
+                  </p>
+                  <p>
+                    Arrival Location:{" "}
+                    <a
+                      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                        item.transportation.arrivalLocation
+                      )}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-500"
+                    >
+                      {item.transportation.arrivalLocation}
+                    </a>
+                  </p>
                   <p>Departure Time: {item.transportation.departureTime}</p>
                   <p>Arrival Time: {item.transportation.arrivalTime}</p>
                 </div>
@@ -121,4 +154,3 @@ export default function TravelPlanner() {
     </div>
   );
 }
-

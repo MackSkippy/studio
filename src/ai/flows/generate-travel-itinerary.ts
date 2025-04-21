@@ -33,9 +33,15 @@ const TransportationSchema = z.object({
   url: z.string().describe('The URL for booking.'),
 });
 
+const PointOfInterestSchema = z.object({
+  name: z.string().describe('The name of the point of interest.'),
+  location: z.string().describe('The location of the point of interest.'),
+});
+
 const PlanItemSchema = z.object({
   day: z.string().describe('The day of the plan.'),
   description: z.string().describe('The description of the day\'s activities.'),
+  pointsOfInterest: z.array(PointOfInterestSchema).optional().describe('A list of points of interest for the day.'),
   transportation: TransportationSchema.optional().describe('Transportation details for the day.'),
 
 });
@@ -70,7 +76,9 @@ const prompt = ai.definePrompt({
       plan: z.array(PlanItemSchema).describe('A personalized travel plan in JSON format.'), // Updated name and description
     }),
   },
-  prompt: `You are an expert travel planner. Based on the user's preferences, generate a personalized travel plan in JSON format. The plan should include a day-by-day schedule, and transportation options for each day. Ensure that the output is a valid JSON array.
+  prompt: `You are an expert travel planner. Based on the user's preferences, generate a personalized travel plan in JSON format. The plan should include a day-by-day schedule, a description of the day's activities, and a list of points of interest with their locations.
+Ensure that the output is a valid JSON array.
+
 Here is the schema:
 ${JSON.stringify(PlanItemSchema.shape, null, 2)}
 
