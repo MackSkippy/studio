@@ -12,8 +12,8 @@ import {z} from 'genkit';
 
 const GenerateTravelPlanInputSchema = z.object({
   destination: z.string().describe('The desired travel destination.'),
-  departureCity: z.string().describe('The city where the user is departing from.'), // new field
   arrivalCity: z.string().describe('The city where the user is arriving to.'), // new field
+  departureCity: z.string().describe('The city where the user is departing from.'), // new field
   dates: z.string().describe('The travel dates or date range.'),
   numberOfDays: z.string().optional().describe('The number of days for the trip.'),
   specificLocations: z
@@ -29,11 +29,14 @@ const TransportationSchema = z.object({
   type: z.string().describe('The type of transportation.'),
   departureLocation: z.string().describe('The departure location.'),
   arrivalLocation: z.string().describe('The arrival location.'),
+  departureStation: z.string().optional().describe('The departure station.'),
+  arrivalStation: z.string().optional().describe('The arrival station.'),
   departureTime: z.string().describe('The departure time.'),
   arrivalTime: z.string().describe('The arrival time.'),
   price: z.number().describe('The price.'),
   url: z.string().describe('The URL for booking.'),
 });
+export type TransportationOption = z.infer<typeof TransportationSchema>;
 
 const PointOfInterestSchema = z.object({
   name: z.string().describe('The name of the point of interest.'),
@@ -66,8 +69,8 @@ const prompt = ai.definePrompt({
   input: {
     schema: z.object({
       destination: z.string().describe('The desired travel destination.'),
-      departureCity: z.string().describe('The city where the user is departing from.'), // new field
       arrivalCity: z.string().describe('The city where the user is arriving to.'), // new field
+      departureCity: z.string().describe('The city where the user is departing from.'), // new field
       dates: z.string().describe('The travel dates or date range.'),
 	  numberOfDays: z.string().optional().describe('The number of days for the trip.'),
       specificLocations:
@@ -81,8 +84,7 @@ const prompt = ai.definePrompt({
       plan: z.array(PlanItemSchema).describe('A personalized travel plan in JSON format.'), // Updated name and description
     }),
   },
-  prompt: `You are an expert travel planner. Based on the user's preferences, generate a personalized travel plan in JSON format. The travel plan MUST begin in the arrival city and end in the departure city. The plan should include a day-by-day schedule, a description of the day's activities, and a list of points of interest with their locations.
-Ensure that the output is a valid JSON array.
+  prompt: `You are an expert travel planner. Based on the user's preferences, generate a personalized travel plan in JSON format. The travel plan MUST begin in the arrival city and end in the departure city. The plan should include a day-by-day schedule, a description of the day's activities, and a list of points of interest with their locations. For transportation, you MUST include departureStation and arrivalStation where they are different from departureLocation and arrivalLocation.
 
 Here is the schema:
 ${JSON.stringify(PlanItemSchema.shape, null, 2)}

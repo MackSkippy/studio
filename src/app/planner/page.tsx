@@ -25,6 +25,8 @@ interface Transportation {
   type: string;
   departureLocation: string;
   arrivalLocation: string;
+  departureStation?: string;
+  arrivalStation?: string;
   departureTime: string;
   arrivalTime: string;
   // Add other relevant fields, e.g., bookingReference, cost
@@ -210,24 +212,24 @@ export default function TravelPlanner() {
                      <p>
                        <strong>From:</strong>{" "}
                        <a
-                         href={renderMapLink(item.transportation.departureLocation)}
+                         href={renderMapLink(item.transportation.departureStation || item.transportation.departureLocation)}
                          target="_blank"
                          rel="noopener noreferrer"
                          className="text-blue-600 hover:underline"
                        >
-                         {item.transportation.departureLocation}
+                         {item.transportation.departureStation || item.transportation.departureLocation}
                        </a>
                        <span className="text-gray-600"> @ {item.transportation.departureTime}</span>
                      </p>
                      <p>
                        <strong>To:</strong>{" "}
                        <a
-                         href={renderMapLink(item.transportation.arrivalLocation)}
+                         href={renderMapLink(item.transportation.arrivalStation || item.transportation.arrivalLocation)}
                          target="_blank"
                          rel="noopener noreferrer"
                          className="text-blue-600 hover:underline"
                        >
-                         {item.transportation.arrivalLocation}
+                         {item.transportation.arrivalStation || item.transportation.arrivalLocation}
                        </a>
                         <span className="text-gray-600"> @ {item.transportation.arrivalTime}</span>
                      </p>
@@ -309,4 +311,3 @@ export default function TravelPlanner() {
     </div>
   );
 }
-
