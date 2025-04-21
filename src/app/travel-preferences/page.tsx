@@ -12,7 +12,7 @@ import { generateTravelPlan } from "@/ai/flows/generate-travel-itinerary"; // As
 // UI Components
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -44,7 +44,7 @@ const SESSION_STORAGE_PLAN_KEY = 'generatedPlan';
 export default function TravelPreferences() {
   const [destination, setDestination] = useState("");
   const [destinationArrivalCity, setDestinationArrivalCity] = useState(""); // new state
-  const [destinationDepartureCity, setDestinationDepartureCity] = useState(""); // new state
+  const [destinationDepartureCity, setDestinationDepartureCity] = useState("Mountain View, CA"); // new state
   const [arrivalDate, setArrivalDate] = useState<Date | undefined>(undefined);
   const [returnDate, setReturnDate] = useState<Date | undefined>(undefined);
   const [numberOfDays, setNumberOfDays] = useState<string>(""); // Use string for input control, parse later
@@ -188,14 +188,13 @@ export default function TravelPreferences() {
     toggleSelection(activity, desiredActivities, setDesiredActivities);
   };
 
-  const handleNumberOfDaysChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+ const handleNumberOfDaysChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     // Allow empty input or positive integers
-    if (value === "" || /^[1-9]\d*$/.test(value)) {
+    if (value === "" || /^[1-9]\\d*$/.test(value)) {
       setNumberOfDays(value);
     }
   };
-
   // Calculate min/max dates for calendars
   const today = new Date();
   today.setHours(0, 0, 0, 0); // Normalize to start of day
@@ -207,7 +206,9 @@ export default function TravelPreferences() {
         
           
             
-              Travel Preferences
+              
+                Travel Preferences
+              
             
           
           
@@ -276,9 +277,9 @@ export default function TravelPreferences() {
                     
                       
                         
-                          {arrivalDate ? format(arrivalDate, "PPP") : 
-                            Pick a date
-                          }
+                          {arrivalDate ? format(arrivalDate, "PPP") : (
+                            "Pick a date"
+                          )}
                         
                       
                     
@@ -305,9 +306,9 @@ export default function TravelPreferences() {
                     
                       
                         
-                          {returnDate ? format(returnDate, "PPP") : 
-                            Pick a date
-                          }
+                          {returnDate ? format(returnDate, "PPP") : (
+                            "Pick a date"
+                          )}
                         
                       
                     
@@ -327,7 +328,7 @@ export default function TravelPreferences() {
                   
                 
               
-              
+               
                 Number of Days
                 
                   
@@ -427,3 +428,5 @@ export default function TravelPreferences() {
     
   );
 }
+"
+
