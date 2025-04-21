@@ -35,17 +35,17 @@ body {
     --radius: 0.5rem;
   }
   .dark {
-    --background: 240 10% 10%; /* Darker gray for dark mode */
+    --background: 240 10% 20%; /* Darker gray for dark mode but lightened */
     --foreground: 0 0% 98%;
-    --card: 240 10% 10%;
+    --card: 240 10% 20%;
     --card-foreground: 0 0% 98%;
-    --popover: 240 10% 10%;
+    --popover: 240 10% 20%;
     --popover-foreground: 0 0% 98%;
     --primary: 220 70% 53%; /* Calming blue */
     --primary-foreground: 0 0% 9%;
-    --secondary: 240 8% 23%; /* Darker secondary for dark mode */
+    --secondary: 240 8% 33%; /* Darker secondary for dark mode but lightened */
     --secondary-foreground: 0 0% 98%;
-    --muted: 240 8% 23%; /* Darker muted for dark mode */
+    --muted: 240 8% 33%; /* Darker muted for dark mode but lightened */
     --muted-foreground: 0 0% 63.9%;
     --accent: 180 100% 25%; /* Teal (#008080) */
     --accent-foreground: 0 0% 98%;
@@ -70,4 +70,3 @@ body {
     @apply bg-background text-foreground;
   }
 }
-
