@@ -104,11 +104,25 @@ export default function TravelPlanner() {
     try {
       const result = await refineTravelItinerary(input);
       // Validate the refined itinerary structure before setting state
-      if (result?.refinedItinerary && Array.isArray(result.refinedItinerary)) {
-        setItinerary(result.refinedItinerary);
+      if (result?.refinedItinerary) {
+         try {
+            const parsedRefinedItinerary = JSON.parse(result.refinedItinerary);
+            if (Array.isArray(parsedRefinedItinerary)) {
+              setItinerary(parsedRefinedItinerary);
+              sessionStorage.setItem('generatedPlan', JSON.stringify(parsedRefinedItinerary));
+
+            } else {
+              console.error("Refined itinerary is not an array:", result);
+              // Keep the old itinerary, show an error
+              setError("Failed to refine itinerary: Invalid response from refinement service. Refined itinerary is not a valid JSON array.");
+            }
+         } catch (parseError) {
+            console.error("Error parsing refined itinerary from refinement service:", parseError);
+            // Keep the old itinerary, show an error
+            setError("Failed to refine itinerary: Could not parse refined itinerary data.");
+         }
         setFeedback(""); // Clear feedback field on success
         // Optionally save the refined itinerary back to session storage
-        sessionStorage.setItem('generatedPlan', JSON.stringify(result.refinedItinerary));
       } else {
          console.error("Refined itinerary is missing or has invalid format:", result);
         // Keep the old itinerary, show an error
@@ -295,3 +309,4 @@ export default function TravelPlanner() {
     </div>
   );
 }
+
