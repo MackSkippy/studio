@@ -14,10 +14,9 @@ export default function Home() {
       <p className="mt-1 text-base text-muted-foreground text-center">
        Your AI friend who's been there and done that
       </p>
-      <Button className="mt-4" onClick={() => router.push("/planner")}>
+      <Button className="mt-4" onClick={() => router.push("/travel-preferences")}>
         Start Planning Your Trip
       </Button>
     </div>
   );
 }
-
