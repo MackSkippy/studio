@@ -2,71 +2,108 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  font-family: Arial, Helvetica, sans-serif;
-}
-
+/*
+  ============================================
+  Base Layer Customizations
+  ============================================
+  - Define CSS variables for light/dark themes.
+  - Apply base styles for body, etc.
+*/
 @layer base {
   :root {
-    --background: 220 14% 96%; /* Soft gray for light mode */
-    --foreground: 0 0% 3.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 3.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 3.9%;
-    --primary: 220 70% 53%; /* Calming blue */
-    --primary-foreground: 0 0% 98%;
-    --secondary: 0 0% 96.1%;
-    --secondary-foreground: 0 0% 9%;
-    --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 45.1%;
-    --accent: 180 100% 25%; /* Teal (#008080) */
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 89.8%;
-    --input: 0 0% 89.8%;
-    --ring: 220 70% 53%;
-    --chart-1: 12 76% 61%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
+    /* Define colors using HSL format: hue saturation lightness */
+    /* Provide hex for quick reference where useful */
+
+    /* Core Layout & Surfaces */
+    --background: 220 14% 96%;       /* #f4f5f7 - Soft gray */
+    --foreground: 0 0% 3.9%;         /* #0a0a0a - Near black */
+    --card: 0 0% 100%;              /* #ffffff - White */
+    --card-foreground: 0 0% 3.9%;    /* #0a0a0a */
+    --popover: var(--card);           /* Use card color by default */
+    --popover-foreground: var(--card-foreground);
+
+    /* Interactive Elements */
+    --primary: 220 70% 53%;          /* #4a7cdc - Calming blue */
+    --primary-foreground: 0 0% 98%;   /* #fafafa - Near white */
+    --secondary: 0 0% 96.1%;        /* #f5f5f5 - Light gray */
+    --secondary-foreground: 0 0% 9%;  /* #171717 */
+    --accent: 180 100% 25%;         /* #008080 - Teal */
+    --accent-foreground: 0 0% 98%;   /* #fafafa */
+    --destructive: 0 84.2% 60.2%;     /* #f56565 - Red */
+    --destructive-foreground: 0 0% 98%; /* #fafafa */
+    --ring: 220 70% 53%;             /* Focus ring, same as primary */
+
+    /* Borders & Inputs */
+    --border: 0 0% 89.8%;            /* #e5e5e5 - Gray */
+    --input: 0 0% 89.8%;             /* #e5e5e5 */
+
+    /* Muted / Subtle Elements */
+    --muted: 0 0% 96.1%;            /* #f5f5f5 - Same as secondary */
+    --muted-foreground: 0 0% 45.1%;  /* #737373 - Medium gray */
+
+    /* Chart Colors (Example Sequence) */
+    --chart-1: 12 76% 61%;           /* #f0805a */
+    --chart-2: 173 58% 39%;         /* #2a8574 */
+    --chart-3: 197 37% 24%;         /* #264e63 */
+    --chart-4: 43 74% 66%;           /* #f7d07c */
+    --chart-5: 27 87% 67%;           /* #f8a46f */
+
+    /* Other Base Values */
     --radius: 0.5rem;
   }
+
   .dark {
-    --background: 240 10% 20%; /* Darker gray for dark mode but lightened */
-    --foreground: 0 0% 98%;
-    --card: 240 10% 20%;
-    --card-foreground: 0 0% 98%;
-    --popover: 240 10% 20%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 220 70% 53%; /* Calming blue */
-    --primary-foreground: 0 0% 9%;
-    --secondary: 240 8% 33%; /* Darker secondary for dark mode but lightened */
-    --secondary-foreground: 0 0% 98%;
-    --muted: 240 8% 33%; /* Darker muted for dark mode but lightened */
-    --muted-foreground: 0 0% 63.9%;
-    --accent: 180 100% 25%; /* Teal (#008080) */
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 240 8% 23%; /* Darker border for dark mode */
-    --input: 240 8% 23%; /* Darker input for dark mode */
-    --ring: 0 0% 83.1%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
+    /* Core Layout & Surfaces */
+    --background: 240 10% 20%;       /* #2d2d3d - Dark gray-blue */
+    --foreground: 0 0% 98%;         /* #fafafa */
+    --card: 240 10% 20%;              /* #2d2d3d */
+    --card-foreground: 0 0% 98%;    /* #fafafa */
+    --popover: var(--card);
+    --popover-foreground: var(--card-foreground);
+
+    /* Interactive Elements */
+    --primary: 220 70% 53%;          /* #4a7cdc - Keep blue vibrant */
+    --primary-foreground: 0 0% 9%;    /* #171717 - Dark text on blue */
+    --secondary: 240 8% 33%;         /* #4d4d5a - Darker gray */
+    --secondary-foreground: 0 0% 98%; /* #fafafa */
+    --accent: 180 100% 25%;         /* #008080 - Keep teal vibrant */
+    --accent-foreground: 0 0% 98%;   /* #fafafa */
+    --destructive: 0 70% 50%;         /* #e04444 - Adjusted red for dark bg */
+    --destructive-foreground: 0 0% 98%; /* #fafafa */
+    --ring: 0 0% 83.1%;             /* #d4d4d4 - Lighter ring for contrast */
+
+    /* Borders & Inputs */
+    --border: 240 8% 23%;            /* #343440 - Subtle dark border */
+    --input: 240 8% 23%;             /* #343440 */
+
+    /* Muted / Subtle Elements */
+    --muted: 240 8% 33%;            /* #4d4d5a - Same as secondary */
+    --muted-foreground: 0 0% 63.9%;  /* #a3a3a3 - Lighter gray text */
+
+    /* Chart Colors (Dark Theme Adjustments) */
+    --chart-1: 220 70% 50%;         /* #3b6fc8 */
+    --chart-2: 160 60% 45%;         /* #2e9a7d */
+    --chart-3: 30 80% 55%;           /* #f2a640 */
+    --chart-4: 280 65% 60%;         /* #a87de0 */
+    --chart-5: 340 75% 55%;         /* #ea638c */
   }
 }
 
 @layer base {
+  /* Apply base styles using the defined variables */
   * {
-    @apply border-border;
+    @apply border-border; /* Apply border color globally */
   }
+
   body {
     @apply bg-background text-foreground;
+    font-family: Arial, Helvetica, sans-serif; /* Keep font here or manage via Tailwind config */
+    /* Alternative using Tailwind's default sans stack (if configured): */
+    /* @apply bg-background text-foreground font-sans; */
+  }
+
+  /* Add base focus-visible styles for accessibility */
+  :focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
   }
 }
