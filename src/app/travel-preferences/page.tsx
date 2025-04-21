@@ -48,7 +48,7 @@ const { predefinedActivities }: ActivityData = activityData;
 // };
 
 // Constant for session storage key
-const SESSION_STORAGE_PLAN_KEY = 'generatedTravelPlan';
+const SESSION_STORAGE_PLAN_KEY = 'generatedPlan';
 
 export default function TravelPreferences() {
   const [destination, setDestination] = useState("");
@@ -306,6 +306,7 @@ export default function TravelPreferences() {
               </Popover>
             </div>
           </div>
+          {/* Number of Days */}
           <div className="space-y-1.5">
             <Label htmlFor="numberOfDays" className="font-semibold">Number of Days</Label>
             <Input
@@ -394,3 +395,4 @@ export default function TravelPreferences() {
     </>
   );
 }
+
