@@ -17,18 +17,49 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 async function getTopCities(country: string): Promise<string[]> {
   // Replace with actual API call
   await new Promise(resolve => setTimeout(resolve, 500));
-  return [
-    "Tokyo",
-    "New York",
-    "London",
-    "Paris",
-    "Rome",
-    "Beijing",
-    "Sydney",
-    "Moscow",
-    "Berlin",
-    "Madrid",
-  ];
+  switch (country) {
+    case 'USA':
+      return [
+        "New York",
+        "Los Angeles",
+        "Chicago",
+        "Houston",
+        "Phoenix",
+        "Philadelphia",
+        "San Antonio",
+        "San Diego",
+        "Dallas",
+        "San Jose",
+      ];
+    case 'Japan':
+      return [
+        "Tokyo",
+        "Yokohama",
+        "Osaka",
+        "Nagoya",
+        "Sapporo",
+        "Fukuoka",
+        "Kawasaki",
+        "Kyoto",
+        "Saitama",
+        "Hiroshima",
+      ];
+    case 'France':
+      return [
+        "Paris",
+        "Marseille",
+        "Lyon",
+        "Toulouse",
+        "Nice",
+        "Nantes",
+        "Strasbourg",
+        "Montpellier",
+        "Bordeaux",
+        "Lille",
+      ];
+    default:
+      return [];
+  }
 }
 
 export default function TravelPreferences() {
