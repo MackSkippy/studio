@@ -226,16 +226,6 @@ export default function TravelPlanner() {
               <Button onClick={handleGenerateItinerary}>Generate Itinerary</Button>
             </CardContent>
           </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle>Feedback</CardTitle>
-              <CardDescription>Provide feedback to refine the itinerary.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <Textarea value={feedback} onChange={(e) => setFeedback(e.target.value)} placeholder="e.g., Too many activities, not enough free time" />
-              <Button onClick={handleRefineItinerary}>Refine Itinerary</Button>
-            </CardContent>
-          </Card>
         </div>
         <div>
           <Card>
@@ -247,8 +237,19 @@ export default function TravelPlanner() {
               {renderItineraryOutline()}
             </CardContent>
           </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle>Feedback</CardTitle>
+              <CardDescription>Provide feedback to refine the itinerary.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <Textarea value={feedback} onChange={(e) => setFeedback(e.target.value)} placeholder="e.g., Too many activities, not enough free time" />
+              <Button onClick={handleRefineItinerary}>Refine Itinerary</Button>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>
   );
 }
+
