@@ -12,6 +12,8 @@ import {z} from 'genkit';
 
 const GenerateTravelPlanInputSchema = z.object({
   destination: z.string().describe('The desired travel destination.'),
+  departureCity: z.string().describe('The city where the user is departing from.'), // new field
+  arrivalCity: z.string().describe('The city where the user is arriving to.'), // new field
   departureLocation: z.string().describe('The user current location.'),
   dates: z.string().describe('The travel dates or date range.'),
   specificLocations: z
@@ -40,6 +42,7 @@ const PointOfInterestSchema = z.object({
 
 const PlanItemSchema = z.object({
   day: z.string().describe('The day of the plan.'),
+  headline: z.string().describe('A short headline describing the day.'),
   description: z.string().describe('The description of the day\'s activities.'),
   pointsOfInterest: z.array(PointOfInterestSchema).optional().describe('A list of points of interest for the day.'),
   transportation: TransportationSchema.optional().describe('Transportation details for the day.'),
@@ -63,6 +66,8 @@ const prompt = ai.definePrompt({
   input: {
     schema: z.object({
       destination: z.string().describe('The desired travel destination.'),
+      departureCity: z.string().describe('The city where the user is departing from.'), // new field
+      arrivalCity: z.string().describe('The city where the user is arriving to.'), // new field
       departureLocation: z.string().describe('The user current location.'),
       dates: z.string().describe('The travel dates or date range.'),
       specificLocations:
@@ -84,6 +89,8 @@ ${JSON.stringify(PlanItemSchema.shape, null, 2)}
 
 User Preferences:
 Destination: {{{destination}}}
+Departure City: {{{departureCity}}}
+Arrival City: {{{arrivalCity}}}
 Departure Location: {{{departureLocation}}}
 Dates: {{{dates}}}
 Specific Locations: {{{specificLocations}}}

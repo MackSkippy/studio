@@ -12,7 +12,7 @@ import { generateTravelPlan } from "@/ai/flows/generate-travel-itinerary"; // As
 // UI Components
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -38,20 +38,13 @@ interface ActivityData {
 const { countryCodeMap, alternativeCountryNames }: CountryData = countryData;
 const { predefinedActivities }: ActivityData = activityData;
 
-// Define categories for activities (not using categories currently)
-// const activityCategories: { [key: string]: string[] } = {
-//   "Sightseeing & Culture": ["Scenery", "Cultural hubs", "Historical Landmarks", "Museums", "Festivals", "Theme Parks"],
-//   "Food & Drink": ["Street Food", "Fine Dining", "Craft Beer/Wine/Liquor"],
-//   "Shopping": ["Unique Goods", "Clothes Shopping"],
-//   "Relaxation & Outdoors": ["Pools and Beaches", "Spas and Onsens", "Hiking"],
-//   "Adventure & Entertainment": ["Extreme Sports", "Animal Encounters", "Bars and Nightclubs", "Sports"],
-// };
-
 // Constant for session storage key
 const SESSION_STORAGE_PLAN_KEY = 'generatedPlan';
 
 export default function TravelPreferences() {
   const [destination, setDestination] = useState("");
+  const [departureCity, setDepartureCity] = useState(""); // new state
+  const [arrivalCity, setArrivalCity] = useState(""); // new state
   const [departureLocation, setDepartureLocation] = useState("Mountain View, CA"); // Consider making this dynamic or empty default
   const [arrivalDate, setArrivalDate] = useState<Date | undefined>(undefined);
   const [returnDate, setReturnDate] = useState<Date | undefined>(undefined);
@@ -229,6 +222,32 @@ export default function TravelPreferences() {
               disabled={isLoading}
             />
           </div>
+
+           {/* Departure City Input */}
+           <div className="space-y-1.5">
+             <Label htmlFor="departureCity" className="font-semibold">Departure City</Label>
+             <Input
+               id="departureCity"
+               type="text"
+               value={departureCity}
+               onChange={(e) => setDepartureCity(e.target.value)}
+               placeholder="e.g., New York, London, Paris"
+               disabled={isLoading}
+             />
+           </div>
+
+           {/* Arrival City Input */}
+           <div className="space-y-1.5">
+             <Label htmlFor="arrivalCity" className="font-semibold">Arrival City</Label>
+             <Input
+               id="arrivalCity"
+               type="text"
+               value={arrivalCity}
+               onChange={(e) => setArrivalCity(e.target.value)}
+               placeholder="e.g., Tokyo, Los Angeles, Berlin"
+               disabled={isLoading}
+             />
+           </div>
 
           {/* Departure Location Input */}
           <div className="space-y-1.5">
