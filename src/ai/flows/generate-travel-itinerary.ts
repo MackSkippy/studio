@@ -69,7 +69,7 @@ const prompt = ai.definePrompt({
       departureCity: z.string().describe('The city where the user is departing from.'), // new field
       arrivalCity: z.string().describe('The city where the user is arriving to.'), // new field
       dates: z.string().describe('The travel dates or date range.'),
-      numberOfDays: z.string().optional().describe('The number of days for the trip.'),
+	  numberOfDays: z.string().optional().describe('The number of days for the trip.'),
       specificLocations:
         z.string().optional().describe('Specific locations within the destination.'),
       desiredActivities: z.string().describe('Desired activities at the location(s).'),
@@ -81,7 +81,7 @@ const prompt = ai.definePrompt({
       plan: z.array(PlanItemSchema).describe('A personalized travel plan in JSON format.'), // Updated name and description
     }),
   },
-  prompt: `You are an expert travel planner. Based on the user's preferences, generate a personalized travel plan in JSON format. The plan should include a day-by-day schedule, a description of the day's activities, and a list of points of interest with their locations.
+  prompt: `You are an expert travel planner. Based on the user's preferences, generate a personalized travel plan in JSON format. The travel plan MUST begin in the arrival city and end in the departure city. The plan should include a day-by-day schedule, a description of the day's activities, and a list of points of interest with their locations.
 Ensure that the output is a valid JSON array.
 
 Here is the schema:
