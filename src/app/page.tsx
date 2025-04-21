@@ -8,15 +8,16 @@ export default function Home() {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen py-2">
-      <h1 className="text-5xl font-extrabold tracking-tight text-center lg:text-6xl text-primary">
+      <h1 className="text-3xl font-extrabold tracking-tight text-center lg:text-4xl text-primary">
         RoamWarrior
       </h1>
-      <p className="mt-3 text-base text-muted-foreground text-center">
-        Let AI craft your perfect travel itinerary.
+      <p className="mt-1 text-base text-muted-foreground text-center">
+       Your AI friend who's been there and done that
       </p>
-      <Button className="mt-6" onClick={() => router.push("/planner")}>
+      <Button className="mt-4" onClick={() => router.push("/planner")}>
         Start Planning Your Trip
       </Button>
     </div>
   );
 }
+
