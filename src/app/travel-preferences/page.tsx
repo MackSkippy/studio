@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback } from "react";
 import { generateTravelItinerary } from "@/ai/flows/generate-travel-itinerary";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -13,55 +12,6 @@ import { format } from "date-fns";
 import { useRouter } from "next/navigation";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-
-// Stub function for fetching cities.  Should be replaced with API call.
-// async function getTopCities(country: string): Promise<string[]> {
-//   // Replace with actual API call
-//   await new Promise(resolve => setTimeout(resolve, 500));
-//   switch (country.toLowerCase()) {
-//     case 'usa':
-//       return [
-//         "New York",
-//         "Los Angeles",
-//         "Chicago",
-//         "Houston",
-//         "Phoenix",
-//         "Philadelphia",
-//         "San Antonio",
-//         "San Diego",
-//         "Dallas",
-//         "San Jose",
-//       ];
-//     case 'japan':
-//       return [
-//         "Tokyo",
-//         "Yokohama",
-//         "Osaka",
-//         "Nagoya",
-//         "Sapporo",
-//         "Fukuoka",
-//         "Kawasaki",
-//         "Kyoto",
-//         "Saitama",
-//         "Hiroshima",
-//       ];
-//     case 'france':
-//       return [
-//         "Paris",
-//         "Marseille",
-//         "Lyon",
-//         "Toulouse",
-//         "Nice",
-//         "Nantes",
-//         "Strasbourg",
-//         "Montpellier",
-//         "Bordeaux",
-//         "Lille",
-//       ];
-//     default:
-//       return [];
-//   }
-// }
 
 const topCities = {
   "us": [
@@ -126,10 +76,7 @@ const topCities = {
   ]
 };
 
-
-// Stub function for fetching activities. Should be replaced with API call.
 async function getTopActivities(destination: string): Promise<string[]> {
-  // Replace with actual API call
   await new Promise(resolve => setTimeout(resolve, 500));
   switch (destination.toLowerCase()) {
     case 'tokyo':
@@ -306,10 +253,10 @@ export default function TravelPreferences() {
       
         
           
-            Enter Your Travel Details
+            <CardTitle>Travel Preferences</CardTitle>
           
           
-            Fill out the form below to generate a personalized itinerary.
+            <CardDescription>Fill out the form below to generate a personalized itinerary.</CardDescription>
           
         
         
@@ -343,7 +290,7 @@ export default function TravelPreferences() {
                       {departureDate ? (
                         format(departureDate, "yyyy-MM-dd")
                       ) : (
-                        Pick a date
+                        "Pick a date"
                       )}
                     </Button>
                   </PopoverTrigger>
@@ -375,7 +322,7 @@ export default function TravelPreferences() {
                       {returnDate ? (
                         format(returnDate, "yyyy-MM-dd")
                       ) : (
-                        Pick a date
+                        "Pick a date"
                       )}
                     </Button>
                   </PopoverTrigger>
@@ -399,45 +346,47 @@ export default function TravelPreferences() {
             
             {availableCities.length > 0 ? (
               
-                {availableCities.map((city) => (
+                
+                  {availableCities.map((city) => (
+                    
+                      <Checkbox
+                        id={city}
+                        checked={specificLocations.includes(city)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            toggleSpecificLocation(city);
+                          } else {
+                            toggleSpecificLocation(city);
+                          }
+                        }}
+                      />
+                      
+                        {city}
+                      
+                    
+                  ))}
                   
                     <Checkbox
-                      id={city}
-                      checked={specificLocations.includes(city)}
+                      id="other"
+                      checked={useOtherLocation}
                       onCheckedChange={(checked) => {
-                        if (checked) {
-                          toggleSpecificLocation(city);
-                        } else {
-                          toggleSpecificLocation(city);
+                        setUseOtherLocation(checked);
+                        if (!checked) {
+                          setOtherLocation("");
                         }
                       }}
                     />
                     
-                      {city}
+                      Other:
                     
+                    <Input
+                      type="text"
+                      value={otherLocation}
+                      onChange={(e) => setOtherLocation(e.target.value)}
+                      placeholder="Enter specific location"
+                      disabled={!useOtherLocation}
+                    />
                   
-                ))}
-                
-                  <Checkbox
-                    id="other"
-                    checked={useOtherLocation}
-                    onCheckedChange={(checked) => {
-                      setUseOtherLocation(checked);
-                      if (!checked) {
-                        setOtherLocation("");
-                      }
-                    }}
-                  />
-                  
-                    Other:
-                  
-                  <Input
-                    type="text"
-                    value={otherLocation}
-                    onChange={(e) => setOtherLocation(e.target.value)}
-                    placeholder="Enter specific location"
-                    disabled={!useOtherLocation}
-                  />
                 
               
             ) : (
@@ -493,3 +442,4 @@ export default function TravelPreferences() {
     
   );
 }
+
