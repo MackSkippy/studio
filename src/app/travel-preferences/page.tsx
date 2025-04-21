@@ -1,5 +1,3 @@
-"use client";
-
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
@@ -96,8 +94,8 @@ export default function TravelPreferences() {
       destination: destination.trim(),
       departureCity: departureCity.trim(),
       arrivalCity: destinationArrivalCity.trim(),
-     // departureLocation: departureLocation.trim(),
       dates: datesString,
+      numberOfDays: numberOfDays,
       specificLocations: allSpecificLocations.join(', '),
       desiredActivities: desiredActivities.join(', '),
       feedback: "", // Assuming feedback might be added later
@@ -417,4 +415,3 @@ export default function TravelPreferences() {
     </>
   );
 }
-
