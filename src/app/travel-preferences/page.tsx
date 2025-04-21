@@ -7,18 +7,24 @@ import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 
 // Updated import path and function name
-import { generateTravelPlan } from "@/ai/flows/generate-travel-itinerary"; // Assuming this returns { plan: YourPlanType } | null
+import { generateTravelPlan } from "@/ai/flows/generate-travel-itinerary";
 
 // UI Components
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Toaster } from "@/components/ui/toaster";
-import { Loader2 } from "lucide-react"; // Import a loader icon
+import { Loader2 } from "lucide-react";
 
 // Import data from JSON files (Consider defining types/interfaces for these)
 import countryData from "@/data/countries.json";
@@ -53,7 +59,7 @@ export default function TravelPreferences() {
   const [desiredActivities, setDesiredActivities] = useState<string[]>([]);
   const [otherLocation, setOtherLocation] = useState("");
   const [useOtherLocation, setUseOtherLocation] = useState(false);
-  const [isLoading, setIsLoading] = useState(false); // Loading state for API call
+  const [isLoading, setIsLoading] = useState<boolean>(false); // Loading state for API call
 
   const router = useRouter();
   const { toast } = useToast();
