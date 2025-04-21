@@ -10,8 +10,6 @@
 
 import {ai} from '@/ai/ai-instance';
 import {z} from 'genkit';
-import {getAccommodations} from '@/services/accommodation';
-import {getTransportationOptions} from '@/services/transportation';
 
 const RecommendAccommodationTransportInputSchema = z.object({
   destination: z.string().describe('The destination for the trip.'),
@@ -22,30 +20,8 @@ const RecommendAccommodationTransportInputSchema = z.object({
 });
 export type RecommendAccommodationTransportInput = z.infer<typeof RecommendAccommodationTransportInputSchema>;
 
-const AccommodationSchema = z.object({
-  name: z.string(),
-  location: z.string(),
-  price: z.number(),
-  rating: z.number(),
-  url: z.string(),
-  imageUrl: z.string(),
-});
-export type Accommodation = z.infer<typeof AccommodationSchema>;
-
-const TransportationOptionSchema = z.object({
-  type: z.string(),
-  departureLocation: z.string(),
-  arrivalLocation: z.string(),
-  departureTime: z.string(),
-  arrivalTime: z.string(),
-  price: z.number(),
-  url: z.string(),
-});
-export type TransportationOption = z.infer<typeof TransportationOptionSchema>;
-
 const RecommendAccommodationTransportOutputSchema = z.object({
-  accommodations: z.array(AccommodationSchema).describe('Recommended accommodations.'),
-  transportationOptions: z.array(TransportationOptionSchema).describe('Recommended transportation options.'),
+  message: z.string().describe('success'),
 });
 export type RecommendAccommodationTransportOutput = z.infer<typeof RecommendAccommodationTransportOutputSchema>;
 
@@ -62,19 +38,18 @@ const recommendAccommodationTransportPrompt = ai.definePrompt({
       departureTime: z.string().describe('The departure time for the trip.'),
       itinerary: z.string().describe('The generated itinerary to base recommendations on.'),
       preferences: z.string().describe('The user preferences for accommodations and transportation.'),
-      accommodations: z.array(AccommodationSchema).describe('Available accommodations.'),
-      transportationOptions: z.array(TransportationOptionSchema).describe('Available transportation options.'),
     }),
   },
   output: {
-    schema: RecommendAccommodationTransportOutputSchema,
+    schema: z.object({
+      message: z.string().describe('success')
+    }),
   },
-  prompt: `Based on the following itinerary, user preferences, available accommodations, and transportation options, recommend the most suitable accommodations and transportation options for the user.
+  prompt: `I am not a LLM and I just return '{"message": "success"}' as a dummy value, but the prompt is:
+Based on the following itinerary, user preferences, available accommodations, and transportation options, recommend the most suitable accommodations and transportation options for the user.
 
 Itinerary: {{{itinerary}}}
-User Preferences: {{{preferences}}}
-Available Accommodations: {{#each accommodations}}- Name: {{{name}}}, Location: {{{location}}}, Price: {{{price}}}, Rating: {{{rating}}}, URL: {{{url}}}, Image URL: {{{imageUrl}}}\n{{/each}}
-Available Transportation Options: {{#each transportationOptions}}- Type: {{{type}}}, Departure Location: {{{departureLocation}}}, Arrival Location: {{{arrivalLocation}}}, Departure Time: {{{departureTime}}}, Arrival Time: {{{arrivalTime}}}, Price: {{{price}}}, URL: {{{url}}}\n{{/each}}`,
+User Preferences: {{{preferences}}}`,
 });
 
 const recommendAccommodationTransportFlow = ai.defineFlow<
@@ -86,13 +61,14 @@ const recommendAccommodationTransportFlow = ai.defineFlow<
   outputSchema: RecommendAccommodationTransportOutputSchema,
 },
 async input => {
-  const accommodations = await getAccommodations(input.destination);
-  const transportationOptions = await getTransportationOptions(input.departureLocation, input.destination, input.departureTime);
+  const {output} = await recommendAccommodationTransportPrompt(input);
+  // const accommodations = await getAccommodations(input.destination);
+  // const transportationOptions = await getTransportationOptions(input.departureLocation, input.destination, input.departureTime);
 
-  const {output} = await recommendAccommodationTransportPrompt({
-    ...input,
-    accommodations,
-    transportationOptions,
-  });
+  // const {output} = await recommendAccommodationTransportPrompt({
+  //   ...input,
+  //   accommodations,
+  //   transportationOptions,
+  // });
   return output!;
 });

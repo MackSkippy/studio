@@ -107,6 +107,63 @@ export default function TravelPlanner() {
     setItinerary(result?.refinedItinerary || "No itinerary refined.");
   };
 
+  const renderItineraryOutline = () => {
+    try {
+      const itineraryData = JSON.parse(itinerary);
+
+      if (!Array.isArray(itineraryData)) {
+        return <Textarea value="Invalid itinerary format." readOnly className="min-h-[200px]" />;
+      }
+
+      return (
+        <ul>
+          {itineraryData.map((item, index) => (
+            <li key={index} className="mb-4">
+              <h3 className="font-semibold">{item.day}</h3>
+              <p className="mb-2">{item.description}</p>
+
+              {item.accommodation && (
+                <div className="mt-2">
+                  <h4 className="font-semibold">Accommodation:</h4>
+                  <p>Name: {item.accommodation.name}</p>
+                  <p>Location: {item.accommodation.location}</p>
+                  <p>Price: {item.accommodation.price}</p>
+                  <p>Rating: {item.accommodation.rating}</p>
+                  <p>
+                    URL:
+                    <a href={item.accommodation.url} target="_blank" rel="noopener noreferrer" className="text-blue-500">
+                      {item.accommodation.url}
+                    </a>
+                  </p>
+                </div>
+              )}
+
+              {item.transportation && (
+                <div className="mt-2">
+                  <h4 className="font-semibold">Transportation:</h4>
+                  <p>Type: {item.transportation.type}</p>
+                  <p>Departure Location: {item.transportation.departureLocation}</p>
+                  <p>Arrival Location: {item.transportation.arrivalLocation}</p>
+                  <p>Departure Time: {item.transportation.departureTime}</p>
+                  <p>Arrival Time: {item.transportation.arrivalTime}</p>
+                  <p>Price: {item.transportation.price}</p>
+                  <p>
+                    URL:
+                    <a href={item.transportation.url} target="_blank" rel="noopener noreferrer" className="text-blue-500">
+                      {item.transportation.url}
+                    </a>
+                  </p>
+                </div>
+              )}
+            </li>
+          ))}
+        </ul>
+      );
+    } catch (error) {
+      return <Textarea value={itinerary} readOnly className="min-h-[200px]" />;
+    }
+  };
+
   return (
     <div className="container py-8">
       <h1 className="text-2xl font-bold mb-4">Plan Your Trip</h1>
@@ -150,7 +207,7 @@ export default function TravelPlanner() {
               <CardDescription>View your personalized travel itinerary.</CardDescription>
             </CardHeader>
             <CardContent>
-              <Textarea value={itinerary} readOnly className="min-h-[200px]" />
+              {renderItineraryOutline()}
             </CardContent>
           </Card>
           <Card>
