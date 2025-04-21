@@ -10,15 +10,24 @@ import { useSearchParams, useRouter } from 'next/navigation';
 export default function TravelPlanner() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const initialItinerary = searchParams.get('itinerary') || "";
-  const [itinerary, setItinerary] = useState<any>(initialItinerary ? JSON.parse(initialItinerary) : '');
+  // const initialItinerary = searchParams.get('itinerary') || "";
+  const [itinerary, setItinerary] = useState<any>(''); //initialItinerary ? JSON.parse(initialItinerary) : '');
   const [feedback, setFeedback] = useState("");
 
   useEffect(() => {
-    if (!searchParams.get('itinerary')) {
-      setItinerary("No itinerary generated yet. Please fill out travel preferences to begin.")
+    // Retrieve the itinerary from session storage
+    const storedItinerary = sessionStorage.getItem('generatedItinerary');
+    if (storedItinerary) {
+      try {
+        setItinerary(JSON.parse(storedItinerary));
+      } catch (error) {
+        console.error("Error parsing itinerary from session storage:", error);
+        setItinerary("Error loading itinerary.");
+      }
+    } else {
+      setItinerary("No itinerary generated yet. Please fill out travel preferences to begin.");
     }
-  }, [searchParams]);
+  }, []);
 
   const handleRefineItinerary = async () => {
     const input = {

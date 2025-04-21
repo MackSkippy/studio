@@ -12,6 +12,7 @@ import { format } from "date-fns";
 import { useRouter } from "next/navigation";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label"; // Added Label import
 
 const topCities = {
   "us": [
@@ -203,7 +204,10 @@ export default function TravelPreferences() {
       generatedItinerary = "No itinerary generated.";
     }
 
-    router.push(`/planner?itinerary=${encodeURIComponent(JSON.stringify(generatedItinerary))}`);
+    // Store the itinerary in session storage
+    sessionStorage.setItem('generatedItinerary', JSON.stringify(generatedItinerary));
+
+    router.push(`/planner`);
   };
 
   const handleDestinationChange = useCallback(async (newDestination: string) => {
@@ -233,64 +237,59 @@ export default function TravelPreferences() {
   }, [destination, handleDestinationChange]);
 
   const toggleSpecificLocation = (location: string) => {
-    if (specificLocations.includes(location)) {
-      setSpecificLocations(specificLocations.filter(item => item !== location));
-    } else {
-      setSpecificLocations([...specificLocations, location]);
-    }
+    setSpecificLocations(prev => 
+      prev.includes(location) 
+        ? prev.filter(item => item !== location) 
+        : [...prev, location]
+    );
   };
 
   const toggleDesiredActivity = (activity: string) => {
-    if (desiredActivities.includes(activity)) {
-      setDesiredActivities(desiredActivities.filter(item => item !== activity));
-    } else {
-      setDesiredActivities([...desiredActivities, activity]);
-    }
+    setDesiredActivities(prev => 
+      prev.includes(activity) 
+        ? prev.filter(item => item !== activity) 
+        : [...prev, activity]
+    );
   };
 
   return (
-    
-      
-        
+    <div className="container mx-auto p-4"> {/* Added container div */}
+      <Card> {/* Added Card wrapper */}
+        <CardHeader> {/* Added CardHeader wrapper */}
+          <CardTitle>Travel Preferences</CardTitle>
+          <CardDescription>Fill out the form below to generate a personalized itinerary.</CardDescription>
+        </CardHeader> {/* Closed CardHeader */}
+        <CardContent className="space-y-6"> {/* Added CardContent wrapper with spacing */} 
           
-            <CardTitle>Travel Preferences</CardTitle>
+          {/* Destination */}
+          <div className="space-y-2">
+            <Label htmlFor="destination">Destination</Label>
+            <Input id="destination" type="text" value={destination} onChange={(e) => handleDestinationChange(e.target.value)} placeholder="e.g., Tokyo, Japan" />
+          </div>
           
+          {/* Departure Location */}
+          <div className="space-y-2">
+             <Label htmlFor="departureLocation">Departure Location</Label>
+             <Input id="departureLocation" type="text" value={departureLocation} onChange={(e) => setDepartureLocation(e.target.value)} placeholder="e.g., New York, USA" />
+          </div>
           
-            <CardDescription>Fill out the form below to generate a personalized itinerary.</CardDescription>
-          
-        
-        
-          
-            
-              Destination
-            
-            <Input type="text" value={destination} onChange={(e) => handleDestinationChange(e.target.value)} placeholder="e.g., Tokyo, Japan" />
-          
-          
-            
-              Departure Location
-            
-            <Input type="text" value={departureLocation} onChange={(e) => setDepartureLocation(e.target.value)} placeholder="e.g., New York, USA" />
-          
-          
-            
-              
-                
-                  Departure Date
-                
+          {/* Dates */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+             <div className="space-y-2">
+                <Label>Departure Date</Label>
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
                       variant={"outline"}
                       className={cn(
-                        "w-[140px] justify-start text-left font-normal",
+                        "w-full justify-start text-left font-normal", // Changed width to full
                         !departureDate && "text-muted-foreground"
                       )}
                     >
                       {departureDate ? (
-                        format(departureDate, "yyyy-MM-dd")
+                        format(departureDate, "PPP") // Use nicer format
                       ) : (
-                        "Pick a date"
+                        <span>Pick a date</span>
                       )}
                     </Button>
                   </PopoverTrigger>
@@ -299,30 +298,27 @@ export default function TravelPreferences() {
                       mode="single"
                       selected={departureDate}
                       onSelect={setDepartureDate}
-                      disabled={returnDate ? { before: returnDate } : undefined}
+                      disabled={returnDate ? { before: new Date(), after: returnDate } : { before: new Date() }}
                       initialFocus
                     />
                   </PopoverContent>
                 </Popover>
-                {/* Place "Pick a date" label below the popover */}
-              
-              
-                
-                  Return Date
-                
+             </div>
+             <div className="space-y-2">
+                <Label>Return Date</Label>
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
                       variant={"outline"}
                       className={cn(
-                        "w-[140px] justify-start text-left font-normal",
+                        "w-full justify-start text-left font-normal", // Changed width to full
                         !returnDate && "text-muted-foreground"
                       )}
                     >
                       {returnDate ? (
-                        format(returnDate, "yyyy-MM-dd")
+                        format(returnDate, "PPP") // Use nicer format
                       ) : (
-                        "Pick a date"
+                        <span>Pick a date</span>
                       )}
                     </Button>
                   </PopoverTrigger>
@@ -331,116 +327,101 @@ export default function TravelPreferences() {
                       mode="single"
                       selected={returnDate}
                       onSelect={setReturnDate}
-                      disabled={departureDate ? { before: departureDate } : undefined}
+                      disabled={departureDate ? { before: departureDate } : { before: new Date() }}
                       initialFocus
                     />
                   </PopoverContent>
                 </Popover>
-                {/* Place "Pick a date" label below the popover */}
-              
-            
-          
-          
-            
-              Specific Locations
-            
-            {availableCities.length > 0 ? (
-              
-                
-                  {availableCities.map((city) => (
-                    
-                      <Checkbox
-                        id={city}
-                        checked={specificLocations.includes(city)}
-                        onCheckedChange={(checked) => {
-                          if (checked) {
-                            toggleSpecificLocation(city);
-                          } else {
-                            toggleSpecificLocation(city);
-                          }
-                        }}
-                      />
-                      
-                        {city}
-                      
-                    
-                  ))}
-                  
-                    <Checkbox
-                      id="other"
-                      checked={useOtherLocation}
-                      onCheckedChange={(checked) => {
-                        setUseOtherLocation(checked);
-                        if (!checked) {
-                          setOtherLocation("");
-                        }
-                      }}
-                    />
-                    
-                      Other:
-                    
-                    <Input
-                      type="text"
-                      value={otherLocation}
-                      onChange={(e) => setOtherLocation(e.target.value)}
-                      placeholder="Enter specific location"
-                      disabled={!useOtherLocation}
-                    />
-                  
-                
-              
-            ) : (
-              <Input
-                type="text"
-                value={specificLocations.join(', ')}
-                onChange={(e) => setSpecificLocations(e.target.value.split(',').map(item => item.trim()))}
-                placeholder="e.g., Shibuya, Asakusa"
-              />
-            )}
-          
-          
+             </div>
+          </div>
 
-            
-              Desired Activities
-            
-            
-              {predefinedActivities.map((activity) => (
-                
-                  <Checkbox
-                    id={activity}
-                    checked={desiredActivities.includes(activity)}
-                    onCheckedChange={(checked) => {
-                      if (checked) {
-                        toggleDesiredActivity(activity);
-                      } else {
-                        toggleDesiredActivity(activity);
-                      }
-                    }}
-                  />
-                  
-                    {activity}
-                  
-                
-              ))}
-            
+          {/* Specific Locations */}
+          {(availableCities.length > 0 || useOtherLocation || !destination) && (
+            <div className="space-y-2">
+              <Label>Specific Locations (optional)</Label>
+              {availableCities.length > 0 && (
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-2 pt-2">
+                  {availableCities.map((city) => (
+                    <div key={city} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`city-${city}`}
+                        checked={specificLocations.includes(city)}
+                        onCheckedChange={() => toggleSpecificLocation(city)}
+                      />
+                      <Label htmlFor={`city-${city}`} className="font-normal">{city}</Label>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div className="flex items-center space-x-2 pt-2">
+                 <Checkbox
+                   id="other-location-toggle"
+                   checked={useOtherLocation}
+                   onCheckedChange={(checked) => {
+                     setUseOtherLocation(Boolean(checked));
+                     if (!checked) {
+                       setOtherLocation("");
+                     }
+                   }}
+                 />
+                 <Label htmlFor="other-location-toggle" className="font-normal">Add another specific location</Label>
+              </div>
+              {useOtherLocation && (
+                <Input
+                  type="text"
+                  value={otherLocation}
+                  onChange={(e) => setOtherLocation(e.target.value)}
+                  placeholder="Enter specific location not listed above"
+                  className="mt-2"
+                />
+              )}
+            </div>
+          )}
+          {availableCities.length === 0 && !useOtherLocation && destination && (
+            <div className="space-y-2">
+                <Label htmlFor="specific-locations-text">Specific Locations (optional, comma-separated)</Label>
+                <Input
+                    id="specific-locations-text"
+                    type="text"
+                    value={specificLocations.join(', ')}
+                    onChange={(e) => setSpecificLocations(e.target.value.split(',').map(item => item.trim()).filter(Boolean))}
+                    placeholder="e.g., Shibuya, Asakusa"
+                />
+            </div>
+          )}
+
+          {/* Desired Activities */}
+          <div className="space-y-2">
+             <Label>Desired Activities (select all that apply)</Label>
+             <div className="grid grid-cols-2 md:grid-cols-3 gap-2 pt-2">
+                {predefinedActivities.map((activity) => (
+                   <div key={activity} className="flex items-center space-x-2">
+                      <Checkbox 
+                        id={`activity-${activity}`}
+                        checked={desiredActivities.includes(activity)}
+                        onCheckedChange={() => toggleDesiredActivity(activity)} 
+                      />
+                      <Label htmlFor={`activity-${activity}`} className="font-normal">{activity}</Label>
+                   </div>
+                ))}
+             </div>
+          </div>
           
+          {/* Accommodation Style */}
+          <div className="space-y-2">
+            <Label htmlFor="accommodationStyle">Style of Accommodation (optional)</Label>
+            <Input id="accommodationStyle" type="text" value={accommodationStyle} onChange={(e) => setAccommodationStyle(e.target.value)} placeholder="e.g., Hotel, Hostel, Airbnb" />
+          </div>
           
-            
-              Style of Accommodation
-            
-            <Input type="text" value={accommodationStyle} onChange={(e) => setAccommodationStyle(e.target.value)} placeholder="e.g., Hotel, Hostel, Airbnb" />
+          {/* Nightly Cost Range */}
+          <div className="space-y-2">
+            <Label htmlFor="nightlyCostRange">Nightly Cost Range (optional)</Label>
+            <Input id="nightlyCostRange" type="text" value={nightlyCostRange} onChange={(e) => setNightlyCostRange(e.target.value)} placeholder="e.g., $100-$200" />
+          </div>
           
-          
-            
-              Nightly Cost Range
-            
-            <Input type="text" value={nightlyCostRange} onChange={(e) => setNightlyCostRange(e.target.value)} placeholder="e.g., $100-$200" />
-          
-          <Button onClick={handleGenerateItinerary} disabled={!destination}>Generate Itinerary</Button>
-        
-      
-    
+          <Button onClick={handleGenerateItinerary} disabled={!destination || !(departureDate && returnDate)} className="w-full">Generate Itinerary</Button>
+        </CardContent> {/* Closed CardContent */}
+      </Card> {/* Closed Card */}
+    </div> // Closed container div
   );
 }
-
-
