@@ -58,7 +58,20 @@ export default function TravelPlanner() {
           {itinerary.map((item, index) => (
             <li key={index} className="mb-4">
               <h3 className="font-semibold">{item.day}</h3>
-              <p className="mb-2">{item.description}</p>
+              {/* Add Google Maps links to the description */}
+              <p className="mb-2">
+                {item.description.split(/(Shibuya Crossing|Harajuku|Meiji Jingu)/g).map((part, i) => {
+                  if (part === "Shibuya Crossing") {
+                    return <a key={i} href="https://www.google.com/maps/search/?api=1&query=Shibuya+Crossing" target="_blank" rel="noopener noreferrer" className="text-blue-500">Shibuya Crossing</a>;
+                  } else if (part === "Harajuku") {
+                    return <a key={i} href="https://www.google.com/maps/search/?api=1&query=Harajuku" target="_blank" rel="noopener noreferrer" className="text-blue-500">Harajuku</a>;
+                  } else if (part === "Meiji Jingu") {
+                    return <a key={i} href="https://www.google.com/maps/search/?api=1&query=Meiji+Jingu+Shrine" target="_blank" rel="noopener noreferrer" className="text-blue-500">Meiji Jingu Shrine</a>;
+                  } else {
+                    return part;
+                  }
+                })}
+              </p>
 
               {item.transportation && (
                 <div className="mt-2">
