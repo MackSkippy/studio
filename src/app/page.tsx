@@ -9,7 +9,8 @@ export default function Home() {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen py-2">
       <h1 className="text-4xl font-extrabold tracking-tight text-center lg:text-5xl">
-        RoamWarrior: Your AI Travel Concierge
+        RoamWarrior: <br/>
+        Your AI Travel Concierge
       </h1>
       <p className="mt-3 text-lg text-muted-foreground text-center">
         Let AI craft your perfect travel itinerary.
@@ -20,3 +21,4 @@ export default function Home() {
     </div>
   );
 }
+
