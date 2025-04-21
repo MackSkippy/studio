@@ -1,8 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { generateTravelItinerary } from "@/ai/flows/generate-travel-itinerary";
-import { recommendAccommodationTransport } from "@/ai/flows/recommend-accommodation-transport";
 import { refineTravelItinerary } from "@/ai/flows/refine-travel-itinerary";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,42 +10,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 
 export default function TravelPlanner() {
   const [destination, setDestination] = useState("");
-  const [departureLocation, setDepartureLocation] = useState("");
+  const [departureLocation, setDepartureLocation] = useState("Mountain View, CA");
   const [dates, setDates] = useState("");
   const [specificLocations, setSpecificLocations] = useState("");
   const [desiredActivities, setDesiredActivities] = useState("");
-  const [itinerary, setItinerary] = useState("");
+  const [itinerary, setItinerary] = useState("No itinerary generated.");
   const [feedback, setFeedback] = useState("");
-
-  useEffect(() => {
-    const initialItinerary = async () => {
-      const defaultInput = {
-        destination: "Tokyo, Japan",
-        departureLocation: "Mountain View, CA",
-        dates: "2024-03-15 to 2024-03-22",
-        specificLocations: "Shibuya, Asakusa",
-        desiredActivities: "Sightseeing, Food tour",
-        feedback: "",
-      };
-      const result = await generateTravelItinerary(defaultInput);
-      let generatedItinerary: any;
-      try {
-        generatedItinerary = JSON.parse(JSON.stringify(result?.itinerary)) || "No itinerary generated.";
-      } catch (e) {
-        generatedItinerary = "No itinerary generated.";
-      }
-      setItinerary(generatedItinerary);
-
-      // Optionally, set the input fields with the default values
-      setDestination(defaultInput.destination);
-      setDepartureLocation(defaultInput.departureLocation);
-      setDates(defaultInput.dates);
-      setSpecificLocations(defaultInput.specificLocations);
-      setDesiredActivities(defaultInput.desiredActivities);
-    };
-
-    initialItinerary();
-  }, []);
 
   const handleGenerateItinerary = async () => {
     const input = {
@@ -58,13 +27,20 @@ export default function TravelPlanner() {
       feedback: "",
     };
     const result = await generateTravelItinerary(input);
-     let generatedItinerary: any;
-      try {
-        generatedItinerary = JSON.parse(JSON.stringify(result?.itinerary)) || "No itinerary generated.";
-      } catch (e) {
-        generatedItinerary = "No itinerary generated.";
-      }
+    let generatedItinerary: any;
+    try {
+      generatedItinerary = JSON.parse(JSON.stringify(result?.itinerary)) || "No itinerary generated.";
+    } catch (e) {
+      generatedItinerary = "No itinerary generated.";
+    }
     setItinerary(generatedItinerary);
+
+    // Optionally, set the input fields with the generated values
+    setDestination(input.destination);
+    setDepartureLocation(input.departureLocation);
+    setDates(input.dates);
+    setSpecificLocations(input.specificLocations);
+    setDesiredActivities(input.desiredActivities);
   };
 
   const handleRefineItinerary = async () => {
@@ -78,62 +54,62 @@ export default function TravelPlanner() {
   };
 
   const renderItineraryOutline = () => {
-     try {
+    try {
       if (typeof itinerary === 'string') {
-          return <Textarea value={itinerary} readOnly className="min-h-[200px]" />;
+        return <Textarea value={itinerary} readOnly className="min-h-[200px]" />;
       }
 
       if (!Array.isArray(itinerary)) {
-          return <Textarea value="Invalid itinerary format." readOnly className="min-h-[200px]" />;
+        return <Textarea value="Invalid itinerary format." readOnly className="min-h-[200px]" />;
       }
 
       return (
-          <ul>
-              {itinerary.map((item, index) => (
-                  <li key={index} className="mb-4">
-                      <h3 className="font-semibold">{item.day}</h3>
-                      <p className="mb-2">{item.description}</p>
+        <ul>
+          {itinerary.map((item, index) => (
+            <li key={index} className="mb-4">
+              <h3 className="font-semibold">{item.day}</h3>
+              <p className="mb-2">{item.description}</p>
 
-                      {item.accommodation && (
-                          <div className="mt-2">
-                              <h4 className="font-semibold">Accommodation:</h4>
-                              <p>Name: {item.accommodation.name}</p>
-                              <p>Location: {item.accommodation.location}</p>
-                              <p>Price: {item.accommodation.price}</p>
-                              <p>Rating: {item.accommodation.rating}</p>
-                              <p>
-                                  URL:
-                                  <a href={item.accommodation.url} target="_blank" rel="noopener noreferrer" className="text-blue-500">
-                                      {item.accommodation.url}
-                                  </a>
-                              </p>
-                          </div>
-                      )}
+              {item.accommodation && (
+                <div className="mt-2">
+                  <h4 className="font-semibold">Accommodation:</h4>
+                  <p>Name: {item.accommodation.name}</p>
+                  <p>Location: {item.accommodation.location}</p>
+                  <p>Price: {item.accommodation.price}</p>
+                  <p>Rating: {item.accommodation.rating}</p>
+                  <p>
+                    URL:
+                    <a href={item.accommodation.url} target="_blank" rel="noopener noreferrer" className="text-blue-500">
+                      {item.accommodation.url}
+                    </a>
+                  </p>
+                </div>
+              )}
 
-                      {item.transportation && (
-                          <div className="mt-2">
-                              <h4 className="font-semibold">Transportation:</h4>
-                              <p>Type: {item.transportation.type}</p>
-                              <p>Departure Location: {item.transportation.departureLocation}</p>
-                              <p>Arrival Location: {item.transportation.arrivalLocation}</p>
-                              <p>Departure Time: {item.transportation.departureTime}</p>
-                              <p>Arrival Time: {item.transportation.arrivalTime}</p>
-                              <p>Price: {item.transportation.price}</p>
-                              <p>
-                                  URL:
-                                  <a href={item.transportation.url} target="_blank" rel="noopener noreferrer" className="text-blue-500">
-                                      {item.transportation.url}
-                                  </a>
-                              </p>
-                          </div>
-                      )}
-                  </li>
-              ))}
-          </ul>
+              {item.transportation && (
+                <div className="mt-2">
+                  <h4 className="font-semibold">Transportation:</h4>
+                  <p>Type: {item.transportation.type}</p>
+                  <p>Departure Location: {item.transportation.departureLocation}</p>
+                  <p>Arrival Location: {item.transportation.arrivalLocation}</p>
+                  <p>Departure Time: {item.transportation.departureTime}</p>
+                  <p>Arrival Time: {item.transportation.arrivalTime}</p>
+                  <p>Price: {item.transportation.price}</p>
+                  <p>
+                    URL:
+                    <a href={item.transportation.url} target="_blank" rel="noopener noreferrer" className="text-blue-500">
+                      {item.transportation.url}
+                    </a>
+                  </p>
+                </div>
+              )}
+            </li>
+          ))}
+        </ul>
       );
-  } catch (error) {
+    } catch (error) {
       return <Textarea value={itinerary} readOnly className="min-h-[200px]" />;
-  }
+    }
   };
 
   return (
