@@ -99,6 +99,18 @@ const topCities = {
     "Montpellier",
     "Bordeaux",
     "Lille",
+  ],
+  india: [
+    "Mumbai",
+    "Delhi",
+    "Bangalore",
+    "Hyderabad",
+    "Chennai",
+    "Kolkata",
+    "Pune",
+    "Ahmedabad",
+    "Jaipur",
+    "Lucknow"
   ]
 };
 
@@ -444,5 +456,4 @@ export default function TravelPreferences() {
     </div>
   );
 }
-
 
