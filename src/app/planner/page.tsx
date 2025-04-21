@@ -148,61 +148,63 @@ export default function TravelPlanner() {
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Departure Date</label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant={"outline"}
-                        className={cn(
-                          "w-[140px] justify-start text-left font-normal",
-                          !departureDate && "text-muted-foreground"
-                        )}
-                      >
-                        {departureDate ? (
-                          format(departureDate, "yyyy-MM-dd")
-                        ) : (
-                          <span>Pick a date</span>
-                        )}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={departureDate}
-                        onSelect={setDepartureDate}
-                        disabled={returnDate ? { before: returnDate } : undefined}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant={"outline"}
+                          className={cn(
+                            "w-[140px] justify-start text-left font-normal",
+                            !departureDate && "text-muted-foreground"
+                          )}
+                        >
+                          {departureDate ? (
+                            format(departureDate, "yyyy-MM-dd")
+                          ) : (
+                            <span>Pick a date</span>
+                          )}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={departureDate}
+                          onSelect={setDepartureDate}
+                          disabled={returnDate ? { before: returnDate } : undefined}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    {/* Place "Pick a date" label below the popover */}
                 </div>
                 <div>
                   <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Return Date</label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant={"outline"}
-                        className={cn(
-                          "w-[140px] justify-start text-left font-normal",
-                          !returnDate && "text-muted-foreground"
-                        )}
-                      >
-                        {returnDate ? (
-                          format(returnDate, "yyyy-MM-dd")
-                        ) : (
-                          <span>Pick a date</span>
-                        )}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={returnDate}
-                        onSelect={setReturnDate}
-                        disabled={departureDate ? { before: departureDate } : undefined}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant={"outline"}
+                          className={cn(
+                            "w-[140px] justify-start text-left font-normal",
+                            !returnDate && "text-muted-foreground"
+                          )}
+                        >
+                          {returnDate ? (
+                            format(returnDate, "yyyy-MM-dd")
+                          ) : (
+                            <span>Pick a date</span>
+                          )}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={returnDate}
+                          onSelect={setReturnDate}
+                          disabled={departureDate ? { before: departureDate } : undefined}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    {/* Place "Pick a date" label below the popover */}
                 </div>
               </div>
               <div>
