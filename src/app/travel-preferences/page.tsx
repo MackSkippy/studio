@@ -210,9 +210,18 @@ export default function TravelPreferences() {
           <div>
             <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Specific Locations</label>
             {availableCities.length > 0 ? (
-              <Select onValueChange={(value) => setSpecificLocations([value])}>
+              <Select
+                multiple
+                onValueChange={(values) => {
+                  if (typeof values === 'string') {
+                    setSpecificLocations([values]);
+                  } else {
+                    setSpecificLocations(values);
+                  }
+                }}
+              >
                 <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Select a city" />
+                  <SelectValue placeholder="Select cities" />
                 </SelectTrigger>
                 <SelectContent>
                   {availableCities.map((city) => (
