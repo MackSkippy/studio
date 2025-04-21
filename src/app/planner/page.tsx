@@ -16,7 +16,7 @@ export default function TravelPlanner() {
 
   useEffect(() => {
     // Retrieve the itinerary from session storage
-    const storedItinerary = sessionStorage.getItem('generatedItinerary');
+    const storedItinerary = sessionStorage.getItem('generatedPlan');
     if (storedItinerary) {
       try {
         setItinerary(JSON.parse(storedItinerary));
@@ -64,17 +64,10 @@ export default function TravelPlanner() {
                 <div className="mt-2">
                   <h4 className="font-semibold">Transportation:</h4>
                   <p>Type: {item.transportation.type}</p>
-                  <p>Departure Location: {item.transportation.departureLocation}</p>
-                  <p>Arrival Location: {item.transportation.arrivalLocation}</p>
+                  <p>Departure Location: <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.transportation.departureLocation)}`} target="_blank" rel="noopener noreferrer" className="text-blue-500">{item.transportation.departureLocation}</a></p>
+                  <p>Arrival Location: <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.transportation.arrivalLocation)}`} target="_blank" rel="noopener noreferrer" className="text-blue-500">{item.transportation.arrivalLocation}</a></p>
                   <p>Departure Time: {item.transportation.departureTime}</p>
                   <p>Arrival Time: {item.transportation.arrivalTime}</p>
-                  <p>Price: {item.transportation.price}</p>
-                  <p>
-                    URL:
-                    <a href={item.transportation.url} target="_blank" rel="noopener noreferrer" className="text-blue-500">
-                      {item.transportation.url}
-                    </a>
-                  </p>
                 </div>
               )}
             </li>
