@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { generateTravelItinerary } from "@/ai/flows/generate-travel-itinerary";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,13 +11,33 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { useRouter } from "next/navigation";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+// Stub function for fetching cities.  Should be replaced with API call.
+async function getTopCities(country: string): Promise<string[]> {
+  // Replace with actual API call
+  await new Promise(resolve => setTimeout(resolve, 500));
+  return [
+    "Tokyo",
+    "New York",
+    "London",
+    "Paris",
+    "Rome",
+    "Beijing",
+    "Sydney",
+    "Moscow",
+    "Berlin",
+    "Madrid",
+  ];
+}
 
 export default function TravelPreferences() {
   const [destination, setDestination] = useState("");
   const [departureLocation, setDepartureLocation] = useState("Mountain View, CA");
   const [departureDate, setDepartureDate] = useState<Date | undefined>(undefined);
   const [returnDate, setReturnDate] = useState<Date | undefined>(undefined);
-  const [specificLocations, setSpecificLocations] = useState("");
+  const [specificLocations, setSpecificLocations] = useState<string[]>([]);
+  const [availableCities, setAvailableCities] = useState<string[]>([]);
   const [desiredActivities, setDesiredActivities] = useState("");
   const [accommodationStyle, setAccommodationStyle] = useState("");
   const [nightlyCostRange, setNightlyCostRange] = useState("");
@@ -33,7 +53,7 @@ export default function TravelPreferences() {
       destination,
       departureLocation,
       dates: departureDate && returnDate ? `${format(departureDate, "yyyy-MM-dd")} to ${format(returnDate, "yyyy-MM-dd")}` : '',
-      specificLocations,
+      specificLocations: specificLocations.join(', '),
       desiredActivities,
       accommodationStyle,
       nightlyCostRange,
@@ -50,6 +70,33 @@ export default function TravelPreferences() {
     router.push(`/planner?itinerary=${encodeURIComponent(JSON.stringify(generatedItinerary))}`);
   };
 
+  const handleDestinationChange = useCallback(async (newDestination: string) => {
+    setDestination(newDestination);
+    // Check if the destination is a country
+    const isCountry = newDestination === 'Japan' || newDestination === 'USA' || newDestination === 'France'; // Example check
+
+    if (isCountry) {
+      const cities = await getTopCities(newDestination);
+      setAvailableCities(cities);
+    } else {
+      setAvailableCities([]);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (destination) {
+      handleDestinationChange(destination);
+    }
+  }, [destination, handleDestinationChange]);
+
+  const toggleSpecificLocation = (location: string) => {
+    if (specificLocations.includes(location)) {
+      setSpecificLocations(specificLocations.filter(item => item !== location));
+    } else {
+      setSpecificLocations([...specificLocations, location]);
+    }
+  };
+
   return (
     <div className="container py-8">
       <h1 className="text-2xl font-bold mb-4">Travel Preferences</h1>
@@ -61,7 +108,7 @@ export default function TravelPreferences() {
         <CardContent className="space-y-2">
           <div>
             <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Destination</label>
-            <Input type="text" value={destination} onChange={(e) => setDestination(e.target.value)} placeholder="e.g., Tokyo, Japan" />
+            <Input type="text" value={destination} onChange={(e) => handleDestinationChange(e.target.value)} placeholder="e.g., Tokyo, Japan" />
           </div>
           <div>
             <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Departure Location</label>
@@ -131,7 +178,27 @@ export default function TravelPreferences() {
           </div>
           <div>
             <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Specific Locations</label>
-            <Input type="text" value={specificLocations} onChange={(e) => setSpecificLocations(e.target.value)} placeholder="e.g., Shibuya, Asakusa" />
+            {availableCities.length > 0 ? (
+              <Select onValueChange={(value) => setSpecificLocations([value])}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Select a city" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableCities.map((city) => (
+                    <SelectItem key={city} value={city}>
+                      {city}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <Input
+                type="text"
+                value={specificLocations.join(', ')}
+                onChange={(e) => setSpecificLocations(e.target.value.split(',').map(item => item.trim()))}
+                placeholder="e.g., Shibuya, Asakusa"
+              />
+            )}
           </div>
           <div>
             <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Desired Activities</label>
