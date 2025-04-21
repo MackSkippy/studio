@@ -306,6 +306,7 @@ export default function TravelPlanner() {
                <Button
                  onClick={handleRefineItinerary}
                  disabled={isLoading || !feedback.trim() || !Array.isArray(itinerary)} // Disable if loading, no feedback, or no valid itinerary
+                 className="w-full"
                >
                  {isLoading ? (
                    <>
