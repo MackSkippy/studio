@@ -64,7 +64,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 // }
 
 const topCities = {
-  usa: [
+  "us": [
     "New York",
     "Los Angeles",
     "Chicago",
@@ -76,7 +76,19 @@ const topCities = {
     "Dallas",
     "San Jose",
   ],
-  japan: [
+  "uk": [
+    "London",
+    "Birmingham",
+    "Glasgow",
+    "Liverpool",
+    "Bristol",
+    "Manchester",
+    "Sheffield",
+    "Leeds",
+    "Edinburgh",
+    "Leicester"
+  ],
+  "japan": [
     "Tokyo",
     "Yokohama",
     "Osaka",
@@ -88,7 +100,7 @@ const topCities = {
     "Saitama",
     "Hiroshima",
   ],
-  france: [
+  "france": [
     "Paris",
     "Marseille",
     "Lyon",
@@ -100,7 +112,7 @@ const topCities = {
     "Bordeaux",
     "Lille",
   ],
-  india: [
+  "india": [
     "Mumbai",
     "Delhi",
     "Bangalore",
@@ -249,11 +261,13 @@ export default function TravelPreferences() {
 
   const handleDestinationChange = useCallback(async (newDestination: string) => {
     setDestination(newDestination);
+    const destinationLower = newDestination.toLowerCase();
+
     // Check if the destination is a country
-    const isCountry = Object.keys(topCities).includes(newDestination.toLowerCase());
+    const isCountry = Object.keys(topCities).includes(destinationLower);
 
     if (isCountry) {
-      setAvailableCities(topCities[newDestination.toLowerCase() as keyof typeof topCities]);
+      setAvailableCities(topCities[destinationLower as keyof typeof topCities]);
     } else {
       setAvailableCities([]);
     }
@@ -288,90 +302,105 @@ export default function TravelPreferences() {
   };
 
   return (
-    <div className="container py-8">
-      <h1 className="text-2xl font-bold mb-4">Travel Preferences</h1>
-      <Card>
-        <CardHeader>
-          <CardTitle>Enter Your Travel Details</CardTitle>
-          <CardDescription>Fill out the form below to generate a personalized itinerary.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          <div>
-            <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Destination</label>
+    
+      
+        
+          
+            Enter Your Travel Details
+          
+          
+            Fill out the form below to generate a personalized itinerary.
+          
+        
+        
+          
+            
+              Destination
+            
             <Input type="text" value={destination} onChange={(e) => handleDestinationChange(e.target.value)} placeholder="e.g., Tokyo, Japan" />
-          </div>
-          <div>
-            <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Departure Location</label>
+          
+          
+            
+              Departure Location
+            
             <Input type="text" value={departureLocation} onChange={(e) => setDepartureLocation(e.target.value)} placeholder="e.g., New York, USA" />
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Departure Date</label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant={"outline"}
-                    className={cn(
-                      "w-[140px] justify-start text-left font-normal",
-                      !departureDate && "text-muted-foreground"
-                    )}
-                  >
-                    {departureDate ? (
-                      format(departureDate, "yyyy-MM-dd")
-                    ) : (
-                      <span>Pick a date</span>
-                    )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={departureDate}
-                    onSelect={setDepartureDate}
-                    disabled={returnDate ? { before: returnDate } : undefined}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-              {/* Place "Pick a date" label below the popover */}
-            </div>
-            <div>
-              <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Return Date</label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant={"outline"}
-                    className={cn(
-                      "w-[140px] justify-start text-left font-normal",
-                      !returnDate && "text-muted-foreground"
-                    )}
-                  >
-                    {returnDate ? (
-                      format(returnDate, "yyyy-MM-dd")
-                    ) : (
-                      <span>Pick a date</span>
-                    )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={returnDate}
-                    onSelect={setReturnDate}
-                    disabled={departureDate ? { before: departureDate } : undefined}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-              {/* Place "Pick a date" label below the popover */}
-            </div>
-          </div>
-          <div>
-            <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Specific Locations</label>
+          
+          
+            
+              
+                
+                  Departure Date
+                
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant={"outline"}
+                      className={cn(
+                        "w-[140px] justify-start text-left font-normal",
+                        !departureDate && "text-muted-foreground"
+                      )}
+                    >
+                      {departureDate ? (
+                        format(departureDate, "yyyy-MM-dd")
+                      ) : (
+                        Pick a date
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={departureDate}
+                      onSelect={setDepartureDate}
+                      disabled={returnDate ? { before: returnDate } : undefined}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+                {/* Place "Pick a date" label below the popover */}
+              
+              
+                
+                  Return Date
+                
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant={"outline"}
+                      className={cn(
+                        "w-[140px] justify-start text-left font-normal",
+                        !returnDate && "text-muted-foreground"
+                      )}
+                    >
+                      {returnDate ? (
+                        format(returnDate, "yyyy-MM-dd")
+                      ) : (
+                        Pick a date
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={returnDate}
+                      onSelect={setReturnDate}
+                      disabled={departureDate ? { before: departureDate } : undefined}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+                {/* Place "Pick a date" label below the popover */}
+              
+            
+          
+          
+            
+              Specific Locations
+            
             {availableCities.length > 0 ? (
-              <div className="flex flex-col space-y-1">
+              
                 {availableCities.map((city) => (
-                  <div key={city} className="flex items-center space-x-2">
+                  
                     <Checkbox
                       id={city}
                       checked={specificLocations.includes(city)}
@@ -383,15 +412,12 @@ export default function TravelPreferences() {
                         }
                       }}
                     />
-                    <label
-                      htmlFor={city}
-                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                    >
+                    
                       {city}
-                    </label>
-                  </div>
+                    
+                  
                 ))}
-                <div className="flex items-center space-x-2">
+                
                   <Checkbox
                     id="other"
                     checked={useOtherLocation}
@@ -402,12 +428,9 @@ export default function TravelPreferences() {
                       }
                     }}
                   />
-                  <label
-                    htmlFor="other"
-                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                  >
+                  
                     Other:
-                  </label>
+                  
                   <Input
                     type="text"
                     value={otherLocation}
@@ -415,8 +438,8 @@ export default function TravelPreferences() {
                     placeholder="Enter specific location"
                     disabled={!useOtherLocation}
                   />
-                </div>
-              </div>
+                
+              
             ) : (
               <Input
                 type="text"
@@ -425,13 +448,15 @@ export default function TravelPreferences() {
                 placeholder="e.g., Shibuya, Asakusa"
               />
             )}
-          </div>
+          
+          
 
-          <div>
-            <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Desired Activities</label>
-            <div className="flex flex-col space-y-1">
+            
+              Desired Activities
+            
+            
               {predefinedActivities.map((activity) => (
-                <div key={activity} className="flex items-center space-x-2">
+                
                   <Checkbox
                     id={activity}
                     checked={desiredActivities.includes(activity)}
@@ -443,28 +468,28 @@ export default function TravelPreferences() {
                       }
                     }}
                   />
-                  <label
-                    htmlFor={activity}
-                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                  >
+                  
                     {activity}
-                  </label>
-                </div>
+                  
+                
               ))}
-            </div>
-          </div>
-
-          <div>
-            <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Style of Accommodation</label>
+            
+          
+          
+            
+              Style of Accommodation
+            
             <Input type="text" value={accommodationStyle} onChange={(e) => setAccommodationStyle(e.target.value)} placeholder="e.g., Hotel, Hostel, Airbnb" />
-          </div>
-          <div>
-            <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Nightly Cost Range</label>
+          
+          
+            
+              Nightly Cost Range
+            
             <Input type="text" value={nightlyCostRange} onChange={(e) => setNightlyCostRange(e.target.value)} placeholder="e.g., $100-$200" />
-          </div>
+          
           <Button onClick={handleGenerateItinerary} disabled={!destination}>Generate Itinerary</Button>
-        </CardContent>
-      </Card>
-    </div>
+        
+      
+    
   );
 }
