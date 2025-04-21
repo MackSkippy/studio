@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { generateTravelItinerary } from "@/ai/flows/generate-travel-itinerary";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
@@ -12,6 +12,8 @@ import { format } from "date-fns";
 import { useRouter } from "next/navigation";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label"; // Added Label import
+import { Toaster } from "@/components/ui/toaster";
+import { useToast } from "@/hooks/use-toast";
 
 const topCities = {
   "us": [
@@ -220,7 +222,7 @@ const countryCodeMap: { [key: string]: string[] } = {
     "Jaipur",
     "Lucknow"
   ]
-}
+};
 
 const alternativeCountryNames: { [key: string]: string } = {
   "united states": "us",
@@ -241,10 +243,14 @@ export default function TravelPreferences() {
   const [otherLocation, setOtherLocation] = useState("");
   const [useOtherLocation, setUseOtherLocation] = useState(false);
   const router = useRouter();
+    const { toast } = useToast();
 
   const handleGenerateItinerary = async () => {
     if (!destination) {
-      alert("Please enter a destination.");
+          toast({
+        title: "Error!",
+        description: "Please enter a destination.",
+      });
       return;
     }
 
@@ -285,11 +291,12 @@ export default function TravelPreferences() {
     // Check if the destination is a country
     const isCountry = Object.keys(countryCodeMap).includes(standardizedDestination);
 
+    let cities = [];
     if (isCountry) {
-      setAvailableCities(countryCodeMap[standardizedDestination as keyof typeof countryCodeMap]);
-    } else {
-      setAvailableCities([]);
+      cities = countryCodeMap[standardizedDestination as keyof typeof countryCodeMap] || [];
     }
+
+    setAvailableCities(cities);
 
     const activities = await getTopActivities(newDestination);
     setAvailableActivities(activities);
@@ -326,134 +333,135 @@ export default function TravelPreferences() {
         
           
             
-              Travel Preferences
+              
+                Travel Preferences
+              
             
           
           
             Fill out the form below to generate a personalized itinerary.
           
         
+      
+      
         
           
-            
-              Destination
-            
-            <Input id="destination" type="text" value={destination} onChange={(e) => handleDestinationChange(e.target.value)} placeholder="e.g., Tokyo, Japan" />
+            Destination
           
+          <Input id="destination" type="text" value={destination} onChange={(e) => handleDestinationChange(e.target.value)} placeholder="e.g., Tokyo, Japan" />
+        
+        
           
-            
-              Departure Location
-            
-            <Input id="departureLocation" type="text" value={departureLocation} onChange={(e) => setDepartureLocation(e.target.value)} placeholder="e.g., New York, USA" />
+            Departure Location
           
+          <Input id="departureLocation" type="text" value={departureLocation} onChange={(e) => setDepartureLocation(e.target.value)} placeholder="e.g., New York, USA" />
+        
+        
           
-            
-              Departure Date
-            
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant={"outline"}
-                  className={cn(
-                    "w-full justify-start text-left font-normal", // Changed width to full
-                    !departureDate && "text-muted-foreground"
-                  )}
-                >
-                  {departureDate ? (
-                    format(departureDate, "PPP") // Use nicer format
-                  ) : (
-                    
-                      Pick a date
-                    
-                  )}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={departureDate}
-                  onSelect={setDepartureDate}
-                  disabled={returnDate ? { before: new Date(), after: returnDate } : { before: new Date() }}
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
+            Departure Date
           
-          
-            
-              Return Date
-            
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant={"outline"}
-                  className={cn(
-                    "w-full justify-start text-left font-normal", // Changed width to full
-                    !returnDate && "text-muted-foreground"
-                  )}
-                >
-                  {returnDate ? (
-                    format(returnDate, "PPP") // Use nicer format
-                  ) : (
-                    
-                      Pick a date
-                    
-                  )}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={returnDate}
-                  onSelect={setReturnDate}
-                  disabled={departureDate ? { before: departureDate } : { before: new Date() }}
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
-          
-
-          
-            
-              Specific Locations (optional)
-              {availableCities.length > 0 && (
-                
-                  {availableCities.map((city) => (
-                     
-                      
-                        
-                          
-                        
-                        
-                          {city}
-                        
-                      
-                    
-                  ))}
-                
-              )}
-              
-                
-                  
-                    
-                      
-                    
-                    
-                      Add another specific location
-                    
-                  
-                
-                {useOtherLocation && (
-                  <Input
-                    type="text"
-                    value={otherLocation}
-                    onChange={(e) => setOtherLocation(e.target.value)}
-                    placeholder="Enter specific location not listed above"
-                    className="mt-2"
-                  />
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant={"outline"}
+                className={cn(
+                  "w-full justify-start text-left font-normal", // Changed width to full
+                  !departureDate && "text-muted-foreground"
                 )}
+              >
+                {departureDate ? (
+                  format(departureDate, "PPP") // Use nicer format
+                ) : (
+                  
+                    Pick a date
+                  
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                selected={departureDate}
+                onSelect={setDepartureDate}
+                disabled={returnDate ? { before: new Date(), after: returnDate } : { before: new Date() }}
+                initialFocus
+              />
+            </PopoverContent>
+          </Popover>
+        
+        
+          
+            Return Date
+          
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant={"outline"}
+                className={cn(
+                  "w-full justify-start text-left font-normal", // Changed width to full
+                  !returnDate && "text-muted-foreground"
+                )}
+              >
+                {returnDate ? (
+                  format(returnDate, "PPP") // Use nicer format
+                ) : (
+                  
+                    Pick a date
+                  
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                selected={returnDate}
+                onSelect={setReturnDate}
+                disabled={departureDate ? { before: departureDate } : { before: new Date() }}
+                initialFocus
+              />
+            </PopoverContent>
+          </Popover>
+        
+
+        
+          
+            Specific Locations (optional)
+          
+            {availableCities.length > 0 && (
+              
+                {availableCities.map((city) => (
+                  
+                    <Checkbox
+                      id={`city-${city}`}
+                      checked={specificLocations.includes(city)}
+                      onCheckedChange={() => toggleSpecificLocation(city)}
+                    />
+                    
+                      {city}
+                    
+                  
+                ))}
+              
+            )}
+            
+              <Checkbox
+                id="other-location-checkbox"
+                checked={useOtherLocation}
+                onCheckedChange={(checked) => setUseOtherLocation(Boolean(checked))}
+              />
+              
+                Add another specific location
               
             
+            {useOtherLocation && (
+              <Input
+                type="text"
+                value={otherLocation}
+                onChange={(e) => setOtherLocation(e.target.value)}
+                placeholder="Enter specific location not listed above"
+                className="mt-2"
+              />
+            )}
           
           {availableCities.length === 0 && !useOtherLocation && destination && (
             
@@ -471,27 +479,28 @@ export default function TravelPreferences() {
           )}
 
           
+            Desired Activities (select all that apply)
             
-              Desired Activities (select all that apply)
-              
-                {predefinedActivities.map((activity) => (
-                   
-                      
-                        
-                          
-                        
-                        
-                          {activity}
-                        
-                      
-                    
-                ))}
-              
+              {predefinedActivities.map((activity) => (
+                
+                  <Checkbox
+                    id={`activity-${activity}`}
+                    checked={desiredActivities.includes(activity)}
+                    onCheckedChange={() => toggleDesiredActivity(activity)}
+                  />
+                  
+                    {activity}
+                  
+                
+              ))}
             
           
-          
+          <Button onClick={handleGenerateItinerary}>
             Generate Itinerary
-          
+          </Button>
+        
+      
+        
         
       
     
