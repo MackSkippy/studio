@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { generateTravelItinerary } from "@/ai/flows/generate-travel-itinerary";
 import { recommendAccommodationTransport } from "@/ai/flows/recommend-accommodation-transport";
 import { refineTravelItinerary } from "@/ai/flows/refine-travel-itinerary";
@@ -19,6 +19,32 @@ export default function TravelPlanner() {
   const [feedback, setFeedback] = useState("");
   const [accommodationRecommendations, setAccommodationRecommendations] = useState("");
   const [transportationRecommendations, setTransportationRecommendations] = useState("");
+
+  useEffect(() => {
+    const initialItinerary = async () => {
+      const defaultInput = {
+        destination: "Tokyo, Japan",
+        departureLocation: "New York, USA",
+        dates: "2024-03-15 to 2024-03-22",
+        specificLocations: "Shibuya, Asakusa",
+        desiredActivities: "Sightseeing, Food tour",
+        feedback: "",
+      };
+      const result = await generateTravelItinerary(defaultInput);
+      setItinerary(result?.itinerary || "No itinerary generated.");
+      setAccommodationRecommendations(result?.accommodationRecommendations || "No accommodations recommended.");
+      setTransportationRecommendations(result?.transportationRecommendations || "No transportations recommended.");
+
+      // Optionally, set the input fields with the default values
+      setDestination(defaultInput.destination);
+      setDepartureLocation(defaultInput.departureLocation);
+      setDates(defaultInput.dates);
+      setSpecificLocations(defaultInput.specificLocations);
+      setDesiredActivities(defaultInput.desiredActivities);
+    };
+
+    initialItinerary();
+  }, []);
 
   const handleGenerateItinerary = async () => {
     const input = {
