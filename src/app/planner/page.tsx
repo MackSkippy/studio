@@ -14,7 +14,9 @@ export default function TravelPlanner() {
   const [dates, setDates] = useState("");
   const [specificLocations, setSpecificLocations] = useState("");
   const [desiredActivities, setDesiredActivities] = useState("");
-  const [itinerary, setItinerary] = useState("No itinerary generated.");
+  const [accommodationStyle, setAccommodationStyle] = useState("");
+  const [nightlyCostRange, setNightlyCostRange] = useState("");
+  const [itinerary, setItinerary] = useState("");
   const [feedback, setFeedback] = useState("");
 
   const handleGenerateItinerary = async () => {
@@ -24,6 +26,8 @@ export default function TravelPlanner() {
       dates,
       specificLocations,
       desiredActivities,
+      accommodationStyle,
+      nightlyCostRange,
       feedback: "",
     };
     const result = await generateTravelItinerary(input);
@@ -41,6 +45,8 @@ export default function TravelPlanner() {
     setDates(input.dates);
     setSpecificLocations(input.specificLocations);
     setDesiredActivities(input.desiredActivities);
+    setAccommodationStyle(input.accommodationStyle);
+    setNightlyCostRange(input.nightlyCostRange);
   };
 
   const handleRefineItinerary = async () => {
@@ -55,6 +61,10 @@ export default function TravelPlanner() {
 
   const renderItineraryOutline = () => {
     try {
+      if (itinerary === '') {
+        return <Textarea value={"No itinerary generated yet"} readOnly className="min-h-[200px]" />;
+      }
+
       if (typeof itinerary === 'string') {
         return <Textarea value={itinerary} readOnly className="min-h-[200px]" />;
       }
@@ -143,6 +153,14 @@ export default function TravelPlanner() {
                 <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Desired Activities</label>
                 <Input type="text" value={desiredActivities} onChange={(e) => setDesiredActivities(e.target.value)} placeholder="e.g., Sightseeing, Food tour" />
               </div>
+              <div>
+                <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Style of Accommodation</label>
+                <Input type="text" value={accommodationStyle} onChange={(e) => setAccommodationStyle(e.target.value)} placeholder="e.g., Hotel, Hostel, Airbnb" />
+              </div>
+              <div>
+                <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Nightly Cost Range</label>
+                <Input type="text" value={nightlyCostRange} onChange={(e) => setNightlyCostRange(e.target.value)} placeholder="e.g., $100-$200" />
+              </div>
               <Button onClick={handleGenerateItinerary}>Generate Itinerary</Button>
             </CardContent>
           </Card>
@@ -172,3 +190,4 @@ export default function TravelPlanner() {
     </div>
   );
 }
+
