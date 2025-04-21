@@ -15,53 +15,93 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 
 // Stub function for fetching cities.  Should be replaced with API call.
-async function getTopCities(country: string): Promise<string[]> {
-  // Replace with actual API call
-  await new Promise(resolve => setTimeout(resolve, 500));
-  switch (country.toLowerCase()) {
-    case 'usa':
-      return [
-        "New York",
-        "Los Angeles",
-        "Chicago",
-        "Houston",
-        "Phoenix",
-        "Philadelphia",
-        "San Antonio",
-        "San Diego",
-        "Dallas",
-        "San Jose",
-      ];
-    case 'japan':
-      return [
-        "Tokyo",
-        "Yokohama",
-        "Osaka",
-        "Nagoya",
-        "Sapporo",
-        "Fukuoka",
-        "Kawasaki",
-        "Kyoto",
-        "Saitama",
-        "Hiroshima",
-      ];
-    case 'france':
-      return [
-        "Paris",
-        "Marseille",
-        "Lyon",
-        "Toulouse",
-        "Nice",
-        "Nantes",
-        "Strasbourg",
-        "Montpellier",
-        "Bordeaux",
-        "Lille",
-      ];
-    default:
-      return [];
-  }
-}
+// async function getTopCities(country: string): Promise<string[]> {
+//   // Replace with actual API call
+//   await new Promise(resolve => setTimeout(resolve, 500));
+//   switch (country.toLowerCase()) {
+//     case 'usa':
+//       return [
+//         "New York",
+//         "Los Angeles",
+//         "Chicago",
+//         "Houston",
+//         "Phoenix",
+//         "Philadelphia",
+//         "San Antonio",
+//         "San Diego",
+//         "Dallas",
+//         "San Jose",
+//       ];
+//     case 'japan':
+//       return [
+//         "Tokyo",
+//         "Yokohama",
+//         "Osaka",
+//         "Nagoya",
+//         "Sapporo",
+//         "Fukuoka",
+//         "Kawasaki",
+//         "Kyoto",
+//         "Saitama",
+//         "Hiroshima",
+//       ];
+//     case 'france':
+//       return [
+//         "Paris",
+//         "Marseille",
+//         "Lyon",
+//         "Toulouse",
+//         "Nice",
+//         "Nantes",
+//         "Strasbourg",
+//         "Montpellier",
+//         "Bordeaux",
+//         "Lille",
+//       ];
+//     default:
+//       return [];
+//   }
+// }
+
+const topCities = {
+  usa: [
+    "New York",
+    "Los Angeles",
+    "Chicago",
+    "Houston",
+    "Phoenix",
+    "Philadelphia",
+    "San Antonio",
+    "San Diego",
+    "Dallas",
+    "San Jose",
+  ],
+  japan: [
+    "Tokyo",
+    "Yokohama",
+    "Osaka",
+    "Nagoya",
+    "Sapporo",
+    "Fukuoka",
+    "Kawasaki",
+    "Kyoto",
+    "Saitama",
+    "Hiroshima",
+  ],
+  france: [
+    "Paris",
+    "Marseille",
+    "Lyon",
+    "Toulouse",
+    "Nice",
+    "Nantes",
+    "Strasbourg",
+    "Montpellier",
+    "Bordeaux",
+    "Lille",
+  ]
+};
+
 
 // Stub function for fetching activities. Should be replaced with API call.
 async function getTopActivities(destination: string): Promise<string[]> {
@@ -177,11 +217,10 @@ export default function TravelPreferences() {
   const handleDestinationChange = useCallback(async (newDestination: string) => {
     setDestination(newDestination);
     // Check if the destination is a country
-    const isCountry = newDestination.toLowerCase() === 'japan' || newDestination.toLowerCase() === 'usa' || newDestination.toLowerCase() === 'france'; // Example check
+    const isCountry = Object.keys(topCities).includes(newDestination.toLowerCase());
 
     if (isCountry) {
-      const cities = await getTopCities(newDestination);
-      setAvailableCities(cities);
+      setAvailableCities(topCities[newDestination.toLowerCase() as keyof typeof topCities]);
     } else {
       setAvailableCities([]);
     }
@@ -405,4 +444,5 @@ export default function TravelPreferences() {
     </div>
   );
 }
+
 
