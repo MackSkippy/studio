@@ -17,8 +17,6 @@ export default function TravelPlanner() {
   const [desiredActivities, setDesiredActivities] = useState("");
   const [itinerary, setItinerary] = useState("");
   const [feedback, setFeedback] = useState("");
-  const [accommodationRecommendations, setAccommodationRecommendations] = useState("");
-  const [transportationRecommendations, setTransportationRecommendations] = useState("");
 
   useEffect(() => {
     const initialItinerary = async () => {
@@ -40,18 +38,6 @@ export default function TravelPlanner() {
       setDates(defaultInput.dates);
       setSpecificLocations(defaultInput.specificLocations);
       setDesiredActivities(defaultInput.desiredActivities);
-
-      // Recommend Accommodation and Transport with the initially generated itinerary
-      const recommendInput = {
-        destination: defaultInput.destination,
-        departureLocation: defaultInput.departureLocation,
-        departureTime: defaultInput.dates,
-        itinerary: generatedItinerary,
-        preferences: "",
-      };
-      const recommendResult = await recommendAccommodationTransport(recommendInput);
-      setAccommodationRecommendations(JSON.stringify(recommendResult?.accommodations, null, 2) || "No accommodations recommended.");
-      setTransportationRecommendations(JSON.stringify(recommendResult?.transportationOptions, null, 2) || "No transportations recommended.");
     };
 
     initialItinerary();
@@ -69,33 +55,7 @@ export default function TravelPlanner() {
     const result = await generateTravelItinerary(input);
     const generatedItinerary = result?.itinerary || "No itinerary generated.";
     setItinerary(generatedItinerary);
-
-    // Recommend Accommodation and Transport with the newly generated itinerary
-    const recommendInput = {
-      destination,
-      departureLocation,
-      departureTime: dates,
-      itinerary: generatedItinerary,
-      preferences: feedback,
-    };
-    const recommendResult = await recommendAccommodationTransport(recommendInput);
-    setAccommodationRecommendations(JSON.stringify(recommendResult?.accommodations, null, 2) || "No accommodations recommended.");
-    setTransportationRecommendations(JSON.stringify(recommendResult?.transportationOptions, null, 2) || "No transportations recommended.");
   };
-
-  const handleRecommendAccommodationTransport = async () => {
-    const input = {
-      destination,
-      departureLocation,
-      departureTime: dates,
-      itinerary,
-      preferences: feedback,
-    };
-    const result = await recommendAccommodationTransport(input);
-    setAccommodationRecommendations(JSON.stringify(result?.accommodations, null, 2) || "No accommodations recommended.");
-    setTransportationRecommendations(JSON.stringify(result?.transportationOptions, null, 2) || "No transportations recommended.");
-  };
-
 
   const handleRefineItinerary = async () => {
     const input = {
@@ -196,7 +156,16 @@ export default function TravelPlanner() {
                 <Input type="text" value={desiredActivities} onChange={(e) => setDesiredActivities(e.target.value)} placeholder="e.g., Sightseeing, Food tour" />
               </div>
               <Button onClick={handleGenerateItinerary}>Generate Itinerary</Button>
-              <Button onClick={handleRecommendAccommodationTransport}>Recommend Accommodation and Transport</Button>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle>Feedback</CardTitle>
+              <CardDescription>Provide feedback to refine the itinerary.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <Textarea value={feedback} onChange={(e) => setFeedback(e.target.value)} placeholder="e.g., Too many activities, not enough free time" />
+              <Button onClick={handleRefineItinerary}>Refine Itinerary</Button>
             </CardContent>
           </Card>
         </div>
@@ -208,34 +177,6 @@ export default function TravelPlanner() {
             </CardHeader>
             <CardContent>
               {renderItineraryOutline()}
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle>Accommodation Recommendations</CardTitle>
-              <CardDescription>Recommended accommodations based on your itinerary.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Textarea value={accommodationRecommendations} readOnly className="min-h-[100px]" />
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle>Transportation Recommendations</CardTitle>
-              <CardDescription>Recommended transportation options.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Textarea value={transportationRecommendations} readOnly className="min-h-[100px]" />
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle>Feedback</CardTitle>
-              <CardDescription>Provide feedback to refine the itinerary.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <Textarea value={feedback} onChange={(e) => setFeedback(e.target.value)} placeholder="e.g., Too many activities, not enough free time" />
-              <Button onClick={handleRefineItinerary}>Refine Itinerary</Button>
             </CardContent>
           </Card>
         </div>
