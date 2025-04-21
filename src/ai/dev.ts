@@ -1,1 +1,3 @@
-// Flows will be imported for their side effects in this file.
+import '@/ai/flows/refine-travel-itinerary.ts';
+import '@/ai/flows/generate-travel-itinerary.ts';
+import '@/ai/flows/recommend-accommodation-transport.ts';
