@@ -31,8 +31,8 @@ const TransportationSchema = z.object({
   arrivalLocation: z.string().describe('The arrival location.'),
   departureStation: z.string().optional().describe('The departure station.'),
   arrivalStation: z.string().optional().describe('The arrival station.'),
-  departureTime: z.string().describe('The departure time.'),
-  arrivalTime: z.string().describe('The arrival time.'),
+  departureTime: z.string().describe('The departure time. Provide fuzzy times if precise schedules are unknown, e.g., "Early Morning", "Early Afternoon".'),
+  arrivalTime: z.string().describe('The arrival time. Provide fuzzy times if precise schedules are unknown, e.g., "Early Morning", "Early Afternoon".'),
   price: z.number().describe('The price.'),
   url: z.string().describe('The URL for booking.'),
 });
@@ -84,7 +84,7 @@ const prompt = ai.definePrompt({
       plan: z.array(PlanItemSchema).describe('A personalized travel plan in JSON format.'), // Updated name and description
     }),
   },
-  prompt: `You are an expert travel planner. Based on the user's preferences, generate a personalized travel plan in JSON format. The travel plan MUST begin in the arrival city and end in the departure city. The plan should include a day-by-day schedule, a description of the day's activities, and a list of points of interest with their locations. For transportation, you MUST include departureStation and arrivalStation where they are different from departureLocation and arrivalLocation.
+  prompt: `You are an expert travel planner. Based on the user's preferences, generate a personalized travel plan in JSON format. The travel plan MUST begin in the arrival city and end in the departure city. The plan should include a day-by-day schedule, a description of the day's activities, and a list of points of interest with their locations. For transportation, you MUST include departureStation and arrivalStation where they are different from departureLocation and arrivalLocation. If you are unsure of the precise times for trains, estimate the departureTime and arrivalTime using general terms such as "Early Morning", "Late Afternoon" or "Evening".
 
 Here is the schema:
 ${JSON.stringify(PlanItemSchema.shape, null, 2)}
