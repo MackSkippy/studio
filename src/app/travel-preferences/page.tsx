@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { useRouter } from "next/navigation";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 
 // Stub function for fetching cities.  Should be replaced with API call.
 async function getTopCities(country: string): Promise<string[]> {
@@ -72,6 +73,8 @@ export default function TravelPreferences() {
   const [desiredActivities, setDesiredActivities] = useState("");
   const [accommodationStyle, setAccommodationStyle] = useState("");
   const [nightlyCostRange, setNightlyCostRange] = useState("");
+  const [otherLocation, setOtherLocation] = useState("");
+  const [useOtherLocation, setUseOtherLocation] = useState(false);
   const router = useRouter();
 
   const handleGenerateItinerary = async () => {
@@ -80,11 +83,16 @@ export default function TravelPreferences() {
       return;
     }
 
+    let allSpecificLocations = [...specificLocations];
+    if (useOtherLocation && otherLocation) {
+      allSpecificLocations.push(otherLocation);
+    }
+
     const input = {
       destination,
       departureLocation,
       dates: departureDate && returnDate ? `${format(departureDate, "yyyy-MM-dd")} to ${format(returnDate, "yyyy-MM-dd")}` : '',
-      specificLocations: specificLocations.join(', '),
+      specificLocations: allSpecificLocations.join(', '),
       desiredActivities,
       accommodationStyle,
       nightlyCostRange,
@@ -112,6 +120,7 @@ export default function TravelPreferences() {
     } else {
       setAvailableCities([]);
     }
+    setSpecificLocations([]); // Clear specific locations when destination changes
   }, []);
 
   useEffect(() => {
@@ -210,27 +219,54 @@ export default function TravelPreferences() {
           <div>
             <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Specific Locations</label>
             {availableCities.length > 0 ? (
-              <Select
-                multiple
-                onValueChange={(values) => {
-                  if (typeof values === 'string') {
-                    setSpecificLocations([values]);
-                  } else {
-                    setSpecificLocations(values);
-                  }
-                }}
-              >
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Select cities" />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableCities.map((city) => (
-                    <SelectItem key={city} value={city}>
+              <div className="flex flex-col space-y-1">
+                {availableCities.map((city) => (
+                  <div key={city} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={city}
+                      checked={specificLocations.includes(city)}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          toggleSpecificLocation(city);
+                        } else {
+                          toggleSpecificLocation(city);
+                        }
+                      }}
+                    />
+                    <label
+                      htmlFor={city}
+                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                    >
                       {city}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                    </label>
+                  </div>
+                ))}
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="other"
+                    checked={useOtherLocation}
+                    onCheckedChange={(checked) => {
+                      setUseOtherLocation(checked);
+                      if (!checked) {
+                        setOtherLocation("");
+                      }
+                    }}
+                  />
+                  <label
+                    htmlFor="other"
+                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                  >
+                    Other:
+                  </label>
+                  <Input
+                    type="text"
+                    value={otherLocation}
+                    onChange={(e) => setOtherLocation(e.target.value)}
+                    placeholder="Enter specific location"
+                    disabled={!useOtherLocation}
+                  />
+                </div>
+              </div>
             ) : (
               <Input
                 type="text"
@@ -258,3 +294,4 @@ export default function TravelPreferences() {
     </div>
   );
 }
+
