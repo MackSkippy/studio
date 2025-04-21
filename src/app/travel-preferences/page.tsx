@@ -240,9 +240,9 @@ export default function TravelPreferences() {
 
            {/* Departure City Input */}
            <div className="space-y-1.5">
-             <Label htmlFor="departureCity" className="font-semibold">Departure City</Label>
+             <Label htmlFor="destinationDepartureCity" className="font-semibold">Destination Departure City</Label>
              <Input
-               id="departureCity"
+               id="destinationDepartureCity"
                type="text"
                value={departureCity}
                onChange={(e) => setDepartureCity(e.target.value)}
