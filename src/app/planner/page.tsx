@@ -31,9 +31,8 @@ export default function TravelPlanner() {
         feedback: "",
       };
       const result = await generateTravelItinerary(defaultInput);
-      setItinerary(result?.itinerary || "No itinerary generated.");
-      setAccommodationRecommendations(result?.accommodationRecommendations || "No accommodations recommended.");
-      setTransportationRecommendations(result?.transportationRecommendations || "No transportations recommended.");
+      const generatedItinerary = result?.itinerary || "No itinerary generated.";
+      setItinerary(generatedItinerary);
 
       // Optionally, set the input fields with the default values
       setDestination(defaultInput.destination);
@@ -41,6 +40,18 @@ export default function TravelPlanner() {
       setDates(defaultInput.dates);
       setSpecificLocations(defaultInput.specificLocations);
       setDesiredActivities(defaultInput.desiredActivities);
+
+      // Recommend Accommodation and Transport with the initially generated itinerary
+      const recommendInput = {
+        destination: defaultInput.destination,
+        departureLocation: defaultInput.departureLocation,
+        departureTime: defaultInput.dates,
+        itinerary: generatedItinerary,
+        preferences: "",
+      };
+      const recommendResult = await recommendAccommodationTransport(recommendInput);
+      setAccommodationRecommendations(JSON.stringify(recommendResult?.accommodations, null, 2) || "No accommodations recommended.");
+      setTransportationRecommendations(JSON.stringify(recommendResult?.transportationOptions, null, 2) || "No transportations recommended.");
     };
 
     initialItinerary();
@@ -56,9 +67,20 @@ export default function TravelPlanner() {
       feedback: "",
     };
     const result = await generateTravelItinerary(input);
-    setItinerary(result?.itinerary || "No itinerary generated.");
-    setAccommodationRecommendations(result?.accommodationRecommendations || "No accommodations recommended.");
-    setTransportationRecommendations(result?.transportationRecommendations || "No transportations recommended.");
+    const generatedItinerary = result?.itinerary || "No itinerary generated.";
+    setItinerary(generatedItinerary);
+
+    // Recommend Accommodation and Transport with the newly generated itinerary
+    const recommendInput = {
+      destination,
+      departureLocation,
+      departureTime: dates,
+      itinerary: generatedItinerary,
+      preferences: feedback,
+    };
+    const recommendResult = await recommendAccommodationTransport(recommendInput);
+    setAccommodationRecommendations(JSON.stringify(recommendResult?.accommodations, null, 2) || "No accommodations recommended.");
+    setTransportationRecommendations(JSON.stringify(recommendResult?.transportationOptions, null, 2) || "No transportations recommended.");
   };
 
   const handleRecommendAccommodationTransport = async () => {
