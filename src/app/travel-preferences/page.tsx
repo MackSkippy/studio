@@ -4,13 +4,12 @@ import { useState, useEffect, useCallback } from "react";
 import { generateTravelItinerary } from "@/ai/flows/generate-travel-itinerary";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { useRouter } from "next/navigation";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label"; // Added Label import
 
@@ -160,6 +159,76 @@ const predefinedActivities = [
   "Sports",
 ];
 
+const countryCodeMap: { [key: string]: string[] } = {
+  "us": [
+    "New York",
+    "Los Angeles",
+    "Chicago",
+    "Houston",
+    "Phoenix",
+    "Philadelphia",
+    "San Antonio",
+    "San Diego",
+    "Dallas",
+    "San Jose",
+  ],
+  "uk": [
+    "London",
+    "Birmingham",
+    "Glasgow",
+    "Liverpool",
+    "Bristol",
+    "Manchester",
+    "Sheffield",
+    "Leeds",
+    "Edinburgh",
+    "Leicester"
+  ],
+  "jp": [
+    "Tokyo",
+    "Yokohama",
+    "Osaka",
+    "Nagoya",
+    "Sapporo",
+    "Fukuoka",
+    "Kawasaki",
+    "Kyoto",
+    "Saitama",
+    "Hiroshima",
+  ],
+  "fr": [
+    "Paris",
+    "Marseille",
+    "Lyon",
+    "Toulouse",
+    "Nice",
+    "Nantes",
+    "Strasbourg",
+    "Montpellier",
+    "Bordeaux",
+    "Lille",
+  ],
+  "in": [
+    "Mumbai",
+    "Delhi",
+    "Bangalore",
+    "Hyderabad",
+    "Chennai",
+    "Kolkata",
+    "Pune",
+    "Ahmedabad",
+    "Jaipur",
+    "Lucknow"
+  ]
+}
+
+const alternativeCountryNames: { [key: string]: string } = {
+  "united states": "us",
+  "usa": "us",
+  "united kingdom": "uk",
+  "great britain": "uk",
+};
+
 export default function TravelPreferences() {
   const [destination, setDestination] = useState("");
   const [departureLocation, setDepartureLocation] = useState("Mountain View, CA");
@@ -210,11 +279,14 @@ export default function TravelPreferences() {
     setDestination(newDestination);
     const destinationLower = newDestination.toLowerCase();
 
+    // Standardize alternative names
+    const standardizedDestination = alternativeCountryNames[destinationLower] || destinationLower;
+
     // Check if the destination is a country
-    const isCountry = Object.keys(topCities).includes(destinationLower);
+    const isCountry = Object.keys(countryCodeMap).includes(standardizedDestination);
 
     if (isCountry) {
-      setAvailableCities(topCities[destinationLower as keyof typeof topCities]);
+      setAvailableCities(countryCodeMap[standardizedDestination as keyof typeof countryCodeMap]);
     } else {
       setAvailableCities([]);
     }
@@ -233,17 +305,17 @@ export default function TravelPreferences() {
   }, [destination, handleDestinationChange]);
 
   const toggleSpecificLocation = (location: string) => {
-    setSpecificLocations(prev => 
-      prev.includes(location) 
-        ? prev.filter(item => item !== location) 
+    setSpecificLocations(prev =>
+      prev.includes(location)
+        ? prev.filter(item => item !== location)
         : [...prev, location]
     );
   };
 
   const toggleDesiredActivity = (activity: string) => {
-    setDesiredActivities(prev => 
-      prev.includes(activity) 
-        ? prev.filter(item => item !== activity) 
+    setDesiredActivities(prev =>
+      prev.includes(activity)
+        ? prev.filter(item => item !== activity)
         : [...prev, activity]
     );
   };
@@ -253,7 +325,9 @@ export default function TravelPreferences() {
       
         
           
-            <CardTitle>Travel Preferences</CardTitle>
+            
+              Travel Preferences
+            
           
           
             Fill out the form below to generate a personalized itinerary.
@@ -262,87 +336,81 @@ export default function TravelPreferences() {
         
           
             
-              
-                Destination
-              
-              <Input id="destination" type="text" value={destination} onChange={(e) => handleDestinationChange(e.target.value)} placeholder="e.g., Tokyo, Japan" />
+              Destination
             
+            <Input id="destination" type="text" value={destination} onChange={(e) => handleDestinationChange(e.target.value)} placeholder="e.g., Tokyo, Japan" />
           
           
             
-              
-                Departure Location
-              
-              <Input id="departureLocation" type="text" value={departureLocation} onChange={(e) => setDepartureLocation(e.target.value)} placeholder="e.g., New York, USA" />
+              Departure Location
             
+            <Input id="departureLocation" type="text" value={departureLocation} onChange={(e) => setDepartureLocation(e.target.value)} placeholder="e.g., New York, USA" />
           
           
             
-              
-                Departure Date
-              
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant={"outline"}
-                    className={cn(
-                      "w-full justify-start text-left font-normal", // Changed width to full
-                      !departureDate && "text-muted-foreground"
-                    )}
-                  >
-                    {departureDate ? (
-                      format(departureDate, "PPP") // Use nicer format
-                    ) : (
-                      
-                        Pick a date
-                      
-                    )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={departureDate}
-                    onSelect={setDepartureDate}
-                    disabled={returnDate ? { before: new Date(), after: returnDate } : { before: new Date() }}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
+              Departure Date
             
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant={"outline"}
+                  className={cn(
+                    "w-full justify-start text-left font-normal", // Changed width to full
+                    !departureDate && "text-muted-foreground"
+                  )}
+                >
+                  {departureDate ? (
+                    format(departureDate, "PPP") // Use nicer format
+                  ) : (
+                    
+                      Pick a date
+                    
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={departureDate}
+                  onSelect={setDepartureDate}
+                  disabled={returnDate ? { before: new Date(), after: returnDate } : { before: new Date() }}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+          
+          
             
-              
-                Return Date
-              
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant={"outline"}
-                    className={cn(
-                      "w-full justify-start text-left font-normal", // Changed width to full
-                      !returnDate && "text-muted-foreground"
-                    )}
-                  >
-                    {returnDate ? (
-                      format(returnDate, "PPP") // Use nicer format
-                    ) : (
-                      
-                        Pick a date
-                      
-                    )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={returnDate}
-                    onSelect={setReturnDate}
-                    disabled={departureDate ? { before: departureDate } : { before: new Date() }}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
+              Return Date
             
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant={"outline"}
+                  className={cn(
+                    "w-full justify-start text-left font-normal", // Changed width to full
+                    !returnDate && "text-muted-foreground"
+                  )}
+                >
+                  {returnDate ? (
+                    format(returnDate, "PPP") // Use nicer format
+                  ) : (
+                    
+                      Pick a date
+                    
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={returnDate}
+                  onSelect={setReturnDate}
+                  disabled={departureDate ? { before: departureDate } : { before: new Date() }}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
           
 
           
