@@ -12,7 +12,7 @@ import { generateTravelPlan } from "@/ai/flows/generate-travel-itinerary"; // As
 // UI Components
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -53,7 +53,7 @@ const SESSION_STORAGE_PLAN_KEY = 'generatedPlan';
 export default function TravelPreferences() {
   const [destination, setDestination] = useState("");
   const [departureLocation, setDepartureLocation] = useState("Mountain View, CA"); // Consider making this dynamic or empty default
-  const [departureDate, setDepartureDate] = useState<Date | undefined>(undefined);
+  const [arrivalDate, setArrivalDate] = useState<Date | undefined>(undefined);
   const [returnDate, setReturnDate] = useState<Date | undefined>(undefined);
   const [numberOfDays, setNumberOfDays] = useState<string>(""); // Use string for input control, parse later
   const [specificLocations, setSpecificLocations] = useState<string[]>([]);
@@ -73,8 +73,8 @@ export default function TravelPreferences() {
       toast({ title: "Missing Information", description: "Please enter a destination.", variant: "destructive" });
       return;
     }
-    if (!departureDate && !numberOfDays) {
-      toast({ title: "Missing Information", description: "Please select a departure date or enter the number of days for your trip.", variant: "destructive" });
+    if (!arrivalDate && !numberOfDays) {
+      toast({ title: "Missing Information", description: "Please select an arrival date or enter the number of days for your trip.", variant: "destructive" });
       return;
     }
 
@@ -87,14 +87,14 @@ export default function TravelPreferences() {
     }
 
     let datesString = '';
-    if (departureDate) {
+    if (arrivalDate) {
       if (numberOfDays) {
-        datesString = `${format(departureDate, "yyyy-MM-dd")} for ${numberOfDays} days`;
+        datesString = `${format(arrivalDate, "yyyy-MM-dd")} for ${numberOfDays} days`;
       } else if (returnDate) {
-        datesString = `${format(departureDate, "yyyy-MM-dd")} to ${format(returnDate, "yyyy-MM-dd")}`;
+        datesString = `${format(arrivalDate, "yyyy-MM-dd")} to ${format(returnDate, "yyyy-MM-dd")}`;
       } else {
         // Fallback shouldn't be reached due to validation, but handle defensively
-        datesString = format(departureDate, "yyyy-MM-dd");
+        datesString = format(arrivalDate, "yyyy-MM-dd");
       }
     }
 
@@ -245,30 +245,30 @@ export default function TravelPreferences() {
 
           {/* Date Selection Grid - Responsive */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-6">
-            {/* Departure Date */}
+            {/* Arrival Date */}
             <div className="space-y-1.5">
-              <Label htmlFor="departure-date-button" className="font-semibold">Departure Date</Label>
+              <Label htmlFor="arrival-date-button" className="font-semibold">Arrival Date</Label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
-                    id="departure-date-button"
+                    id="arrival-date-button"
                     variant={"outline"}
                     className={cn(
                       "w-full justify-start text-left font-normal",
-                      !departureDate && "text-muted-foreground"
+                      !arrivalDate && "text-muted-foreground"
                     )}
                     aria-required="true"
                     disabled={isLoading}
                   >
                     {/* Calendar Icon (Optional) <CalendarIcon className="mr-2 h-4 w-4" /> */}
-                    {departureDate ? format(departureDate, "PPP") : <span>Pick a date</span>}
+                    {arrivalDate ? format(arrivalDate, "PPP") : <span>Pick a date</span>}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0">
                   <Calendar
                     mode="single"
-                    selected={departureDate}
-                    onSelect={setDepartureDate}
+                    selected={arrivalDate}
+                    onSelect={setArrivalDate}
                     disabled={(date) => date < today || isLoading} // Disable past dates
                     initialFocus
                   />
@@ -288,7 +288,7 @@ export default function TravelPreferences() {
                       "flex-grow justify-start text-left font-normal", // flex-grow allows button to take space
                       !returnDate && "text-muted-foreground"
                     )}
-                    disabled={!departureDate || isLoading} // Disabled if no departure
+                    disabled={!arrivalDate || isLoading} // Disabled if no arrival
                   >
                     {/* Calendar Icon className="mr-2 h-4 w-4" /> */}
                     {returnDate ? format(returnDate, "PPP") : (<span>Pick return date</span>)}
@@ -299,7 +299,7 @@ export default function TravelPreferences() {
                     mode="single"
                     selected={returnDate}
                     onSelect={setReturnDate}
-                    disabled={!departureDate || isLoading} // Disable dates before departure
+                    disabled={!arrivalDate || isLoading} // Disable dates before arrival
                     initialFocus
                   />
                 </PopoverContent>
@@ -317,7 +317,7 @@ export default function TravelPreferences() {
               onChange={handleNumberOfDaysChange}
               placeholder="Days"
               className="w-20 flex-shrink-0" // Fixed width, prevent growing/shrinking excessively
-              disabled={isLoading} // Disabled if no departure, or if return date is picked
+              disabled={isLoading} // Disabled if no arrival, or if return date is picked
               aria-label="Number of days for the trip"
             />
           </div>
@@ -395,4 +395,3 @@ export default function TravelPreferences() {
     </>
   );
 }
-
