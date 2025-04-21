@@ -34,6 +34,7 @@ interface Transportation {
 
 interface ItineraryItem {
   day: string; // Or number
+  headline: string;
   description: string;
   pointsOfInterest?: PointOfInterest[];
   transportation?: Transportation;
@@ -178,7 +179,7 @@ export default function TravelPlanner() {
         {itinerary.map((item, index) => (
           // Using index as key is acceptable if items don't have unique IDs and list order is stable per render
           <li key={index} className="border-b pb-4 last:border-b-0 last:pb-0">
-            <h3 className="font-semibold text-lg mb-1">{item.day}</h3>
+             <h3 className="font-semibold text-lg mb-1">{item.headline}</h3>
             <p className="mb-3 text-sm text-gray-700">{item.description}</p>
 
             {/* Points of Interest */}
@@ -188,15 +189,19 @@ export default function TravelPlanner() {
                 <ul className="list-disc list-inside space-y-1">
                   {item.pointsOfInterest.map((poi, poiIndex) => (
                     <li key={poiIndex} className="text-sm">
-                      <a
-                        href={renderMapLink(`${poi.name}, ${poi.location}`)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-600 hover:underline"
-                      >
-                        {poi.name}
-                      </a>
-                      <span className="text-gray-600"> ({poi.location})</span>
+                      {poi.location ? (
+                        <a
+                          href={renderMapLink(`${poi.name}, ${poi.location}`)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:underline"
+                        >
+                          {poi.name}
+                        </a>
+                      ) : (
+                        <span>{poi.name}</span> // Display name without link if no location
+                      )}
+                      {poi.location && <span className="text-gray-600"> ({poi.location})</span>}
                     </li>
                   ))}
                 </ul>
@@ -211,7 +216,8 @@ export default function TravelPlanner() {
                      <p><strong>Type:</strong> {item.transportation.type}</p>
                      <p>
                        <strong>From:</strong>{" "}
-                       <a
+                       {item.transportation.departureStation || item.transportation.departureLocation ? (
+                        <a
                          href={renderMapLink(item.transportation.departureStation || item.transportation.departureLocation)}
                          target="_blank"
                          rel="noopener noreferrer"
@@ -219,18 +225,25 @@ export default function TravelPlanner() {
                        >
                          {item.transportation.departureStation || item.transportation.departureLocation}
                        </a>
+                       ) : (
+                        <span>{item.transportation.departureStation || item.transportation.departureLocation}</span>
+                       )}
                        <span className="text-gray-600"> @ {item.transportation.departureTime}</span>
                      </p>
                      <p>
                        <strong>To:</strong>{" "}
-                       <a
-                         href={renderMapLink(item.transportation.arrivalStation || item.transportation.arrivalLocation)}
-                         target="_blank"
-                         rel="noopener noreferrer"
-                         className="text-blue-600 hover:underline"
-                       >
-                         {item.transportation.arrivalStation || item.transportation.arrivalLocation}
-                       </a>
+                       {item.transportation.arrivalStation || item.transportation.arrivalLocation ? (
+                         <a
+                           href={renderMapLink(item.transportation.arrivalStation || item.transportation.arrivalLocation)}
+                           target="_blank"
+                           rel="noopener noreferrer"
+                           className="text-blue-600 hover:underline"
+                         >
+                           {item.transportation.arrivalStation || item.transportation.arrivalLocation}
+                         </a>
+                       ) : (
+                         <span>{item.transportation.arrivalStation || item.transportation.arrivalLocation}</span>
+                       )}
                         <span className="text-gray-600"> @ {item.transportation.arrivalTime}</span>
                      </p>
                 </div>
