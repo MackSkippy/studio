@@ -7,11 +7,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+import { format } from "date-fns";
 
 export default function TravelPlanner() {
   const [destination, setDestination] = useState("");
   const [departureLocation, setDepartureLocation] = useState("Mountain View, CA");
-  const [dates, setDates] = useState("");
+  const [departureDate, setDepartureDate] = useState<Date | undefined>(undefined);
+  const [returnDate, setReturnDate] = useState<Date | undefined>(undefined);
   const [specificLocations, setSpecificLocations] = useState("");
   const [desiredActivities, setDesiredActivities] = useState("");
   const [accommodationStyle, setAccommodationStyle] = useState("");
@@ -23,7 +28,7 @@ export default function TravelPlanner() {
     const input = {
       destination,
       departureLocation,
-      dates,
+      dates: departureDate && returnDate ? `${format(departureDate, "yyyy-MM-dd")} to ${format(returnDate, "yyyy-MM-dd")}` : '',
       specificLocations,
       desiredActivities,
       accommodationStyle,
@@ -42,7 +47,6 @@ export default function TravelPlanner() {
     // Optionally, set the input fields with the generated values
     setDestination(input.destination);
     setDepartureLocation(input.departureLocation);
-    setDates(input.dates);
     setSpecificLocations(input.specificLocations);
     setDesiredActivities(input.desiredActivities);
     setAccommodationStyle(input.accommodationStyle);
@@ -141,9 +145,65 @@ export default function TravelPlanner() {
                 <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Departure Location</label>
                 <Input type="text" value={departureLocation} onChange={(e) => setDepartureLocation(e.target.value)} placeholder="e.g., New York, USA" />
               </div>
-              <div>
-                <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Dates</label>
-                <Input type="text" value={dates} onChange={(e) => setDates(e.target.value)} placeholder="e.g., 2024-03-15 to 2024-03-22" />
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Departure Date</label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant={"outline"}
+                        className={cn(
+                          "w-[140px] justify-start text-left font-normal",
+                          !departureDate && "text-muted-foreground"
+                        )}
+                      >
+                        {departureDate ? (
+                          format(departureDate, "yyyy-MM-dd")
+                        ) : (
+                          <span>Pick a date</span>
+                        )}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={departureDate}
+                        onSelect={setDepartureDate}
+                        disabled={returnDate ? { before: returnDate } : undefined}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+                <div>
+                  <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Return Date</label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant={"outline"}
+                        className={cn(
+                          "w-[140px] justify-start text-left font-normal",
+                          !returnDate && "text-muted-foreground"
+                        )}
+                      >
+                        {returnDate ? (
+                          format(returnDate, "yyyy-MM-dd")
+                        ) : (
+                          <span>Pick a date</span>
+                        )}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={returnDate}
+                        onSelect={setReturnDate}
+                        disabled={departureDate ? { before: departureDate } : undefined}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
               </div>
               <div>
                 <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Specific Locations</label>
@@ -190,4 +250,3 @@ export default function TravelPlanner() {
     </div>
   );
 }
-
