@@ -179,6 +179,27 @@ async function getTopActivities(destination: string): Promise<string[]> {
   }
 }
 
+const predefinedActivities = [
+  "Scenery",
+  "Cultural hubs",
+  "Historical Landmarks",
+  "Museums",
+  "Street Food",
+  "Fine Dining",
+  "Unique Goods",
+  "Clothes Shopping",
+  "Pools and Beaches",
+  "Spas and Onsens",
+  "Hiking",
+  "Extreme Sports",
+  "Animal Encounters",
+  "Festivals",
+  "Theme Parks",
+  "Bars and Nightclubs",
+  "Craft Beer/Wine/Liquor",
+  "Sports",
+];
+
 export default function TravelPreferences() {
   const [destination, setDestination] = useState("");
   const [departureLocation, setDepartureLocation] = useState("Mountain View, CA");
@@ -408,38 +429,29 @@ export default function TravelPreferences() {
 
           <div>
             <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Desired Activities</label>
-            {availableActivities.length > 0 ? (
-              <div className="flex flex-col space-y-1">
-                {availableActivities.map((activity) => (
-                  <div key={activity} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={activity}
-                      checked={desiredActivities.includes(activity)}
-                      onCheckedChange={(checked) => {
-                        if (checked) {
-                          toggleDesiredActivity(activity);
-                        } else {
-                          toggleDesiredActivity(activity);
-                        }
-                      }}
-                    />
-                    <label
-                      htmlFor={activity}
-                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                    >
-                      {activity}
-                    </label>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <Input
-                type="text"
-                value={desiredActivities.join(', ')}
-                onChange={(e) => setDesiredActivities(e.target.value.split(',').map(item => item.trim()))}
-                placeholder="e.g., Sightseeing, Food tour"
-              />
-            )}
+            <div className="flex flex-col space-y-1">
+              {predefinedActivities.map((activity) => (
+                <div key={activity} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={activity}
+                    checked={desiredActivities.includes(activity)}
+                    onCheckedChange={(checked) => {
+                      if (checked) {
+                        toggleDesiredActivity(activity);
+                      } else {
+                        toggleDesiredActivity(activity);
+                      }
+                    }}
+                  />
+                  <label
+                    htmlFor={activity}
+                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                  >
+                    {activity}
+                  </label>
+                </div>
+              ))}
+            </div>
           </div>
 
           <div>
@@ -456,4 +468,3 @@ export default function TravelPreferences() {
     </div>
   );
 }
-
