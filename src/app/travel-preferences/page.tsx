@@ -277,6 +277,7 @@ export default function TravelPreferences() {
             </div>
 
             {/* Return Date OR Number of Days */}
+            {/* Return Date Section - Calendar Popout */}
             <div className="space-y-1.5">
               <Label htmlFor="return-date-button" className="font-semibold">Return Date</Label>
               <Popover>
@@ -285,13 +286,12 @@ export default function TravelPreferences() {
                     id="return-date-button"
                     variant={"outline"}
                     className={cn(
-                      "flex-grow justify-start text-left font-normal", // flex-grow allows button to take space
+                      "w-full justify-start text-left font-normal",
                       !returnDate && "text-muted-foreground"
                     )}
-                    disabled={!arrivalDate || isLoading} // Disabled if no arrival
+                    disabled={!arrivalDate || isLoading}
                   >
-                    {/* Calendar Icon className="mr-2 h-4 w-4" /> */}
-                    {returnDate ? format(returnDate, "PPP") : (<span>Pick return date</span>)}
+                    {returnDate ? format(returnDate, "PPP") : <span>Pick a date</span>}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0">
@@ -299,13 +299,14 @@ export default function TravelPreferences() {
                     mode="single"
                     selected={returnDate}
                     onSelect={setReturnDate}
-                    disabled={!arrivalDate || isLoading} // Disable dates before arrival
+                    disabled={(date) => date < today || (arrivalDate && date < arrivalDate) || isLoading}
                     initialFocus
                   />
                 </PopoverContent>
               </Popover>
             </div>
           </div>
+
           {/* Number of Days */}
           <div className="space-y-1.5">
             <Label htmlFor="numberOfDays" className="font-semibold">Number of Days</Label>
