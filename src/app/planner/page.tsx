@@ -60,22 +60,6 @@ export default function TravelPlanner() {
               <h3 className="font-semibold">{item.day}</h3>
               <p className="mb-2">{item.description}</p>
 
-              {item.accommodation && (
-                <div className="mt-2">
-                  <h4 className="font-semibold">Accommodation:</h4>
-                  <p>Name: {item.accommodation.name}</p>
-                  <p>Location: {item.accommodation.location}</p>
-                  <p>Price: {item.accommodation.price}</p>
-                  <p>Rating: {item.accommodation.rating}</p>
-                  <p>
-                    URL:
-                    <a href={item.accommodation.url} target="_blank" rel="noopener noreferrer" className="text-blue-500">
-                      {item.accommodation.url}
-                    </a>
-                  </p>
-                </div>
-              )}
-
               {item.transportation && (
                 <div className="mt-2">
                   <h4 className="font-semibold">Transportation:</h4>

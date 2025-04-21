@@ -19,19 +19,10 @@ const GenerateTravelItineraryInputSchema = z.object({
     .optional()
     .describe('Specific locations within the destination (e.g., specific cities or regions).'),
   desiredActivities: z.string().describe('Desired activities at the location(s).'),
-  accommodationStyle: z.string().optional().describe('The desired style of accommodation (e.g., hotel, hostel, Airbnb).'),
   nightlyCostRange: z.string().optional().describe('The desired nightly cost range for accommodation (e.g., $100-$200).'),
   feedback: z.string().optional().describe('User feedback on previous itineraries.'),
 });
 export type GenerateTravelItineraryInput = z.infer<typeof GenerateTravelItineraryInputSchema>;
-
-const AccommodationSchema = z.object({
-  name: z.string().describe('The name of the accommodation.'),
-  location: z.string().describe('The location of the accommodation.'),
-  price: z.number().describe('The price of the accommodation.'),
-  rating: z.number().describe('The rating of the accommodation.'),
-  url: z.string().describe('The URL of the accommodation.'),
-});
 
 const TransportationSchema = z.object({
   type: z.string().describe('The type of transportation.'),
@@ -46,7 +37,6 @@ const TransportationSchema = z.object({
 const ItineraryItemSchema = z.object({
   day: z.string().describe('The day of the itinerary.'),
   description: z.string().describe('The description of the day\'s activities.'),
-  accommodation: AccommodationSchema.optional().describe('Accommodation details for the day.'),
   transportation: TransportationSchema.optional().describe('Transportation details for the day.'),
 });
 
@@ -71,7 +61,6 @@ const prompt = ai.definePrompt({
       specificLocations:
         z.string().optional().describe('Specific locations within the destination.'),
       desiredActivities: z.string().describe('Desired activities at the location(s).'),
-      accommodationStyle: z.string().optional().describe('The desired style of accommodation (e.g., hotel, hostel, Airbnb).'),
       nightlyCostRange: z.string().optional().describe('The desired nightly cost range for accommodation (e.g., $100-$200).'),
       feedback: z.string().optional().describe('User feedback on previous itineraries.'),
     }),
@@ -81,7 +70,7 @@ const prompt = ai.definePrompt({
       itinerary: z.array(ItineraryItemSchema).describe('A personalized travel itinerary in JSON format.'),
     }),
   },
-  prompt: `You are an expert travel planner. Based on the user's preferences, generate a personalized travel itinerary in JSON format. The itinerary should include a day-by-day plan, accommodation recommendations, and transportation options for each day. Ensure that the output is a valid JSON array.
+  prompt: `You are an expert travel planner. Based on the user's preferences, generate a personalized travel itinerary in JSON format. The itinerary should include a day-by-day plan, and transportation options for each day. Ensure that the output is a valid JSON array.
 Here is the schema:
 ${JSON.stringify(ItineraryItemSchema.shape, null, 2)}
 
@@ -91,7 +80,6 @@ Departure Location: {{{departureLocation}}}
 Dates: {{{dates}}}
 Specific Locations: {{{specificLocations}}}
 Desired Activities: {{{desiredActivities}}}
-Accommodation Style: {{{accommodationStyle}}}
 Nightly Cost Range: {{{nightlyCostRange}}}
 Feedback: {{{feedback}}}
 

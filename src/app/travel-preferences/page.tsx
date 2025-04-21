@@ -162,14 +162,13 @@ const predefinedActivities = [
 
 export default function TravelPreferences() {
   const [destination, setDestination] = useState("");
-  const [departureLocation, setDepartureLocation] = useState("Mountain View, CA");
+  const [departureLocation, setDepartureLocation] = "Mountain View, CA";
   const [departureDate, setDepartureDate] = useState<Date | undefined>(undefined);
   const [returnDate, setReturnDate] = useState<Date | undefined>(undefined);
   const [specificLocations, setSpecificLocations] = useState<string[]>([]);
   const [availableCities, setAvailableCities] = useState<string[]>([]);
   const [desiredActivities, setDesiredActivities] = useState<string[]>([]);
   const [availableActivities, setAvailableActivities] = useState<string[]>([]);
-  const [accommodationStyle, setAccommodationStyle] = useState("");
   const [nightlyCostRange, setNightlyCostRange] = useState("");
   const [otherLocation, setOtherLocation] = useState("");
   const [useOtherLocation, setUseOtherLocation] = useState(false);
@@ -192,7 +191,6 @@ export default function TravelPreferences() {
       dates: departureDate && returnDate ? `${format(departureDate, "yyyy-MM-dd")} to ${format(returnDate, "yyyy-MM-dd")}` : '',
       specificLocations: allSpecificLocations.join(', '),
       desiredActivities: desiredActivities.join(', '),
-      accommodationStyle,
       nightlyCostRange,
       feedback: "",
     };
@@ -407,11 +405,7 @@ export default function TravelPreferences() {
              </div>
           </div>
           
-          {/* Accommodation Style */}
-          <div className="space-y-2">
-            <Label htmlFor="accommodationStyle">Style of Accommodation (optional)</Label>
-            <Input id="accommodationStyle" type="text" value={accommodationStyle} onChange={(e) => setAccommodationStyle(e.target.value)} placeholder="e.g., Hotel, Hostel, Airbnb" />
-          </div>
+
           
           {/* Nightly Cost Range */}
           <div className="space-y-2">
