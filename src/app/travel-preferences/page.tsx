@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 // Updated import path and function name
-import { generateTravelPlan } from "@/ai/flows/generate-travel-plan"; 
+import { generateTravelPlan } from "@/ai/flows/generate-travel-itinerary"; 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";

@@ -33,12 +33,13 @@ const TransportationSchema = z.object({
   url: z.string().describe('The URL for booking.'),
 });
 
-const PlanItemSchema = z.object({ // Renamed from ItineraryItemSchema
-  day: z.string().describe('The day of the plan.'), // Updated description
-  description: z.string().describe('The description of the day activities.'),
+const PlanItemSchema = z.object({
+  day: z.string().describe('The day of the plan.'),
+  description: z.string().describe('The description of the day\'s activities.'),
   transportation: TransportationSchema.optional().describe('Transportation details for the day.'),
+
 });
-export type PlanItemSchema = z.infer<typeof PlanItemSchema>;
+export type PlanItem = z.infer<typeof PlanItemSchema>;
 
 const GenerateTravelPlanOutputSchema = z.object({ // Renamed from GenerateTravelItineraryOutputSchema
   plan: z.array(PlanItemSchema).describe('A personalized travel plan with accommodation and transportation.'), // Updated name and description
