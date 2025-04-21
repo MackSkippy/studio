@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
@@ -42,8 +44,7 @@ const SESSION_STORAGE_PLAN_KEY = 'generatedPlan';
 export default function TravelPreferences() {
   const [destination, setDestination] = useState("");
   const [destinationArrivalCity, setDestinationArrivalCity] = useState(""); // new state
-  const [departureCity, setDepartureCity] = useState(""); // new state
-  //const [departureLocation, setDepartureLocation] = useState("Mountain View, CA"); // Consider making this dynamic or empty default
+  const [destinationDepartureCity, setDestinationDepartureCity] = useState(""); // new state
   const [arrivalDate, setArrivalDate] = useState<Date | undefined>(undefined);
   const [returnDate, setReturnDate] = useState<Date | undefined>(undefined);
   const [numberOfDays, setNumberOfDays] = useState<string>(""); // Use string for input control, parse later
@@ -92,7 +93,7 @@ export default function TravelPreferences() {
 
     const input = {
       destination: destination.trim(),
-      departureCity: departureCity.trim(),
+      departureCity: destinationDepartureCity.trim(),
       arrivalCity: destinationArrivalCity.trim(),
       dates: datesString,
       numberOfDays: numberOfDays,
@@ -201,217 +202,228 @@ export default function TravelPreferences() {
 
   // --- Render Logic ---
   return (
-    <>
-      {/* Using a Card for structure and styling */}
-      <Card className="w-full max-w-2xl mx-auto my-8 shadow-lg">
-        <CardHeader>
-          <CardTitle className="text-2xl font-bold">Plan Your Next Adventure</CardTitle>
-        </CardHeader>
+    
+      
+        
+          
+            
+              Travel Preferences
+            
+          
+          
+            Fill out the form below to generate a personalized itinerary.
+          
+        
+        
+          
+            
+              
+                
+                  
+                    Destination
+                  
+                  
+                    <Input
+                      id="destination"
+                      type="text"
+                      value={destination}
+                      onChange={(e) => handleDestinationChange(e.target.value)}
+                      placeholder="e.g., Tokyo, Japan, France"
+                      aria-required="true"
+                      disabled={isLoading}
+                    />
+                  
+                
+              
+              
+                
+                  
+                    Destination Arrival City
+                  
+                  
+                    <Input
+                      id="destinationArrivalCity"
+                      type="text"
+                      value={destinationArrivalCity}
+                      onChange={(e) => setDestinationArrivalCity(e.target.value)}
+                      placeholder="e.g., Tokyo, Los Angeles, Berlin"
+                      disabled={isLoading}
+                    />
+                  
+                
+              
+              
+                
+                  
+                    Destination Departure City
+                  
+                  
+                    <Input
+                      id="destinationDepartureCity"
+                      type="text"
+                      value={destinationDepartureCity}
+                      onChange={(e) => setDestinationDepartureCity(e.target.value)}
+                      placeholder="e.g., New York, London, Paris"
+                      disabled={isLoading}
+                    />
+                  
+                
+              
+              
+                Arrival Date
+                
+                  
+                    
+                      
+                        
+                          {arrivalDate ? format(arrivalDate, "PPP") : 
+                            Pick a date
+                          }
+                        
+                      
+                    
+                    
+                      
+                        
+                          
+                            mode="single"
+                            selected={arrivalDate}
+                            onSelect={setArrivalDate}
+                            disabled={(date) => date < today || isLoading} // Disable past dates
+                            initialFocus
+                          />
+                        
+                      
+                    
+                  
+                
+              
+              
+                Return Date
+                
+                  
+                    
+                      
+                        
+                          {returnDate ? format(returnDate, "PPP") : 
+                            Pick a date
+                          }
+                        
+                      
+                    
+                    
+                      
+                        
+                          
+                            mode="single"
+                            selected={returnDate}
+                            onSelect={setReturnDate}
+                            disabled={(date) => date < today || (arrivalDate && date < arrivalDate) || isLoading}
+                            initialFocus
+                          />
+                        
+                      
+                    
+                  
+                
+              
+              
+                Number of Days
+                
+                  
+                    <Input
+                      id="numberOfDays"
+                      type="number" // Use number but handle validation via state/handler
+                      min="1"
+                      value={numberOfDays}
+                      onChange={handleNumberOfDaysChange}
+                      placeholder="Days"
+                      className="w-20 flex-shrink-0" // Fixed width, prevent growing/shrinking excessively
+                      disabled={isLoading} // Disabled if no arrival, or if return date is picked
+                      aria-label="Number of days for the trip"
+                    />
+                  
+                
+              
+              
 
-        <CardContent className="space-y-6">
-          {/* Destination Input */}
-          <div className="space-y-1.5">
-            <Label htmlFor="destination" className="font-semibold">Destination</Label>
-            <Input
-              id="destination"
-              type="text"
-              value={destination}
-              onChange={(e) => handleDestinationChange(e.target.value)}
-              placeholder="e.g., Tokyo, Japan, France"
-              aria-required="true"
-              disabled={isLoading}
-            />
-          </div>
-
-           {/* Destination Arrival City Input */}
-           <div className="space-y-1.5">
-             <Label htmlFor="destinationArrivalCity" className="font-semibold">Destination Arrival City</Label>
-             <Input
-               id="destinationArrivalCity"
-               type="text"
-               value={destinationArrivalCity}
-               onChange={(e) => setDestinationArrivalCity(e.target.value)}
-               placeholder="e.g., Tokyo, Los Angeles, Berlin"
-               disabled={isLoading}
-             />
-           </div>
-
-           {/* Departure City Input */}
-           <div className="space-y-1.5">
-             <Label htmlFor="destinationDepartureCity" className="font-semibold">Destination Departure City</Label>
-             <Input
-               id="destinationDepartureCity"
-               type="text"
-               value={departureCity}
-               onChange={(e) => setDepartureCity(e.target.value)}
-               placeholder="e.g., New York, London, Paris"
-               disabled={isLoading}
-             />
-           </div>
-
-          {/* Departure Location Input */}
-          {/*<div className="space-y-1.5">
-            <Label htmlFor="departureLocation" className="font-semibold">Departure Location</Label>
-            <Input
-              id="departureLocation"
-              type="text"
-              value={departureLocation}
-              onChange={(e) => setDepartureLocation(e.target.value)}
-              placeholder="e.g., Your City, State/Country"
-              disabled={isLoading}
-            />
-          </div>*/}
-
-          {/* Date Selection Grid - Responsive */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-6">
-            {/* Arrival Date */}
-            <div className="space-y-1.5">
-              <Label htmlFor="arrival-date-button" className="font-semibold">Arrival Date</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    id="arrival-date-button"
-                    variant={"outline"}
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !arrivalDate && "text-muted-foreground"
-                    )}
-                    aria-required="true"
-                    disabled={isLoading}
-                  >
-                    {/* Calendar Icon (Optional) <CalendarIcon className="mr-2 h-4 w-4" /> */}
-                    {arrivalDate ? format(arrivalDate, "PPP") : <span>Pick a date</span>}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={arrivalDate}
-                    onSelect={setArrivalDate}
-                    disabled={(date) => date < today || isLoading} // Disable past dates
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-
-            {/* Return Date OR Number of Days */}
-            {/* Return Date Section - Calendar Popout */}
-            <div className="space-y-1.5">
-              <Label htmlFor="return-date-button" className="font-semibold">Return Date</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    id="return-date-button"
-                    variant={"outline"}
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !returnDate && "text-muted-foreground"
-                    )}
-                    disabled={!arrivalDate || isLoading}
-                  >
-                    {returnDate ? format(returnDate, "PPP") : <span>Pick a date</span>}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={returnDate}
-                    onSelect={setReturnDate}
-                    disabled={(date) => date < today || (arrivalDate && date < arrivalDate) || isLoading}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-          </div>
-
-          {/* Number of Days */}
-          <div className="space-y-1.5">
-            <Label htmlFor="numberOfDays" className="font-semibold">Number of Days</Label>
-            <Input
-              id="numberOfDays"
-              type="number" // Use number but handle validation via state/handler
-              min="1"
-              value={numberOfDays}
-              onChange={handleNumberOfDaysChange}
-              placeholder="Days"
-              className="w-20 flex-shrink-0" // Fixed width, prevent growing/shrinking excessively
-              disabled={isLoading} // Disabled if no arrival, or if return date is picked
-              aria-label="Number of days for the trip"
-            />
-          </div>
-
-          {/* --- Conditional Sections --- */}
-          {destination.trim() && (
-            <>
-              {/* Specific Locations Section */}
-              <div className="space-y-3 pt-2"> {/* Add some padding top */}
-                <Label className="font-semibold">Specific Locations within {destination} (Optional)</Label>
-                {availableCities.length > 0 ? (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-2 pt-1">
-                    {availableCities.map((city) => (
-                      <div key={city} className="flex items-center space-x-2 whitespace-nowrap">
-                        <Checkbox
-                          id={`city-${city.replace(/\s+/g, '-')}`} // Create unique ID
-                          checked={specificLocations.includes(city)}
-                          onCheckedChange={() => toggleSpecificLocation(city)}
-                          disabled={isLoading}
-                        />
-                        <Label htmlFor={`city-${city.replace(/\s+/g, '-')}`} className="font-normal cursor-pointer">
-                          {city}
-                        </Label>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <Input
-                    type="text"
-                    value={otherLocation}
-                    onChange={(e) => setOtherLocation(e.target.value)}
-                    placeholder="Enter specific locations (comma-separated)"
-                    disabled={isLoading}
-                  />
-                )}
-              </div>
-
-              {/* Desired Activities Section */}
-              <div className="space-y-2 pt-2">
-                <Label className="font-semibold">Desired Activities (Optional)</Label>
-                <div className="grid grid-cols-3 gap-x-4 gap-y-2 pt-1">
-                  {predefinedActivities.map((activity) => (
-                    <div key={activity} className="flex items-center space-x-2 whitespace-nowrap">
-                      <Checkbox
-                        id={`activity-${activity.replace(/\s+/g, '-')}`} // Create unique ID
-                        checked={desiredActivities.includes(activity)}
-                        onCheckedChange={() => toggleDesiredActivity(activity)}
+              {destination.trim() && (
+                <>
+                  
+                    
+                      Specific Locations (Optional)
+                    
+                    {availableCities.length > 0 ? (
+                      
+                        {availableCities.map((city) => (
+                          
+                            
+                              <Checkbox
+                                id={`city-${city.replace(/\s+/g, '-')}`} // Create unique ID
+                                checked={specificLocations.includes(city)}
+                                onCheckedChange={() => toggleSpecificLocation(city)}
+                                disabled={isLoading}
+                              />
+                              
+                                {city}
+                              
+                            
+                          
+                        ))}
+                      
+                    ) : (
+                      <Input
+                        type="text"
+                        value={otherLocation}
+                        onChange={(e) => setOtherLocation(e.target.value)}
+                        placeholder="Enter specific locations (comma-separated)"
                         disabled={isLoading}
                       />
-                      <Label htmlFor={`activity-${activity.replace(/\s+/g, '-')}`} className="font-normal cursor-pointer">
-                        {activity}
-                      </Label>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </>
-          )}
+                    )}
+                  
 
-          {/* Submission Button */}
-          <Button onClick={handleGeneratePlan} className="w-full text-lg py-3" disabled={isLoading}>
-            {isLoading ? (
-              <>
-                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                Generating Plan...
-              </>
-            ) : (
-              'Generate My Travel Plan'
-            )}
-          </Button>
-        </CardContent>
-      </Card>
-      {/* Toaster component for displaying notifications */}
-      <Toaster />
-    </>
+                  
+                    
+                      Desired Activities (Optional)
+                    
+                    
+                      {predefinedActivities.map((activity) => (
+                        
+                          
+                            <Checkbox
+                              id={`activity-${activity.replace(/\s+/g, '-')}`} // Create unique ID
+                              checked={desiredActivities.includes(activity)}
+                              onCheckedChange={() => toggleDesiredActivity(activity)}
+                              disabled={isLoading}
+                            />
+                            
+                              {activity}
+                            
+                          
+                        
+                      ))}
+                    
+                  
+                </>
+              )}
+
+              
+                
+                  {isLoading ? (
+                    <>
+                      
+                      Generating Plan...
+                    </>
+                  ) : (
+                    'Generate My Travel Plan'
+                  )}
+                
+              
+            
+          
+        
+      
+      
+    
   );
 }
