@@ -10,10 +10,8 @@ export default function Home() {
     <div className="flex flex-col items-center justify-center min-h-screen py-2">
       <h1 className="text-5xl font-extrabold tracking-tight text-center lg:text-6xl text-primary">
         RoamWarrior
-        <br />
-        Your AI Travel Concierge
       </h1>
-      <p className="mt-3 text-lg text-muted-foreground text-center">
+      <p className="mt-3 text-base text-muted-foreground text-center">
         Let AI craft your perfect travel itinerary.
       </p>
       <Button className="mt-6" onClick={() => router.push("/planner")}>
@@ -22,4 +20,3 @@ export default function Home() {
     </div>
   );
 }
-
