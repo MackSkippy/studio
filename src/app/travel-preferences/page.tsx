@@ -43,6 +43,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Toaster } from "@/components/ui/toaster";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"; // Import Alert components
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 // --- Data Imports ---
 import countryData from "@/data/countries.json";
@@ -206,6 +207,24 @@ export default function TravelPreferences() {
     return input;
   };
 
+    const cityLookup = (destination: string) => {
+      const destinationLower = destination.trim().toLowerCase();
+      let cities: string[] = [];
+
+      if (destinationLower) {
+        const standardizedDestination = alternativeCountryNames[destinationLower] || destinationLower;
+        if (countryCodeMap.hasOwnProperty(standardizedDestination)) {
+          cities = countryCodeMap[standardizedDestination] || [];
+        } else {
+          //If no cities found by country, attempt to return the most similar string
+          if (alternativeCountryNames[destinationLower]) {
+            cities = countryCodeMap[alternativeCountryNames[destinationLower]] || [];
+          }
+        }
+      }
+      return cities;
+    }
+
 
   // --- Event Handlers ---
   const handleGeneratePlan = async () => {
@@ -273,10 +292,15 @@ export default function TravelPreferences() {
 
     if (destinationLower) {
       const standardizedDestination = alternativeCountryNames[destinationLower] || destinationLower;
-      if (countryCodeMap.hasOwnProperty(standardizedDestination)) {
-        cities = countryCodeMap[standardizedDestination] || [];
+        if (countryCodeMap.hasOwnProperty(standardizedDestination)) {
+          cities = countryCodeMap[standardizedDestination] || [];
+        } else {
+          //If no cities found by country, attempt to return the most similar string
+          if (alternativeCountryNames[destinationLower]) {
+            cities = countryCodeMap[alternativeCountryNames[destinationLower]] || [];
+          }
+        }
       }
-    }
 
     setAvailableCities(cities);
     // Reset dependent fields on destination change
@@ -362,15 +386,39 @@ export default function TravelPreferences() {
   }, [destination, arrivalCity, departureCity, desiredActivities, arrivalDate, numberOfDays, isLoading]);
 
 
+    const availableActivities = useMemo(() => {
+        if (!destination) return predefinedActivities; //Return ALL if no destination, or filter based on data in the future.
+
+        const destinationLower = destination.trim().toLowerCase();
+        let activities: string[] = [];
+
+        if (destinationLower) {
+          //  const standardizedDestination = alternativeCountryNames[destinationLower] || destinationLower;
+          // if (destinationLower === "japan") {
+            return predefinedActivities;
+          //}
+        }
+        return predefinedActivities;
+    }, [destination, predefinedActivities]);
+
+    const availableSpecificLocations = useMemo(() => {
+        if (!destination) return [];
+
+        return cityLookup(destination);
+    }, [destination])
+
+
   return (
     
       
         
           
-            Travel Preferences
-          
-          
-            Fill out the form below to generate a personalized itinerary. Fields marked with * are required.
+            
+              Travel Preferences
+            
+            
+              Fill out the form below to generate a personalized itinerary. Fields marked with * are required.
+            
           
         
         
@@ -391,7 +439,7 @@ export default function TravelPreferences() {
               
                 {/* Label updated to show requirement */}
                 
-                  Arrival City (within Destination) *
+                  Destination Arrival City (within Destination) *
                 
                 
                   e.g., Tokyo, Rome, Los Angeles (LAX)
@@ -409,18 +457,14 @@ export default function TravelPreferences() {
             
           
 
-            {/* Dates & Duration */}
             
-              {/* Arrival Date */}
               
+                Arrival Date
                 
-                   Arrival Date *
-                 
-                 
+                
                   
                     
                       
-                       
                         {arrivalDate ? format(arrivalDate, "PPP") : 
                           'Pick a date'
                         }
@@ -443,39 +487,34 @@ export default function TravelPreferences() {
                 
                 Required unless using Number of Days.
               
-              
 
-              {/* Number of Days */}
               
-                
-                  Number of Days
+                Number of Days
                 
                 
                   e.g., 7
                 
                 
-                 Use if no Return Date. Cleared if Return Date selected.
+                 Use if no Arrival Date
               
             
           
 
-            {/* --- Conditional Sections (Based on Destination) --- */}
-            {destination.trim() && (
+            
               
-                {/* Specific Locations */}
                 
+                  Specific Locations (Optional)
+                
+                
+                  Select suggested cities/landmarks for '{destination}' or add your own below (comma-separated).
+                
+                {/* Checkboxes for available cities */}
+                {availableSpecificLocations.length > 0 && (
                   
-                    Specific Locations (Optional)
-                  
-                  
-                    Select suggested cities/landmarks for '{destination}' or add your own below (comma-separated).
-                  
-                  {/* Checkboxes for available cities */}
-                  {availableCities.length > 0 && (
-                    
-                      {availableCities.map((city) => {
-                        const cityId = `city-${city.replace(/\s+/g, '-').toLowerCase()}`;
-                        return (
+                    {availableSpecificLocations.map((city) => {
+                      const cityId = `city-${city.replace(/\s+/g, '-').toLowerCase()}`;
+                      return (
+                        
                           
                             
                               
@@ -489,36 +528,36 @@ export default function TravelPreferences() {
                               
                             
                           
-                        );
-                      })}
+                        
+                      );
+                    })}
                     
-                  )}
+                )}
 
-                  {/* Input for other locations */}
-                  
-                      
-                       Add other specific places (comma-separated)
-                      
-                      
-                        Add other places: Eiffel Tower, Kyoto, etc.
-                      
+                {/* Input for other locations */}
+                
+                    
+                     Add other specific places (comma-separated)
+                    
+                    
+                      Add other places: Eiffel Tower, Kyoto, etc.
                     
                   
                 
+              
 
-                {/* Desired Activities */}
+              
                 
-                   {/* Label updated to show requirement */}
-                  
-                    Desired Activities *
-                  
-                  
-                    Select your interests. At least one is required.
-                  
-                  
-                    {predefinedActivities.map((activity) => {
-                        const activityId = `activity-${activity.replace(/\s+/g, '-').toLowerCase()}`;
-                        return (
+                  Desired Activities *
+                
+                
+                  Select your interests. At least one is required.
+                
+                 
+                    {availableActivities.map((activity) => {
+                      const activityId = `activity-${activity.replace(/\s+/g, '-').toLowerCase()}`;
+                      return (
+                        
                           
                             
                               
@@ -532,21 +571,20 @@ export default function TravelPreferences() {
                               
                             
                           
-                        );
-                      })}
-                    {/* TODO: Consider adding an "Other Activities" text input if needed */}
+                        
+                      );
+                    })}
                   
                 
               
-            )}
+            
 
-            {/* Submit Button */}
             
               {isLoading ? (
-                <>
+                
                   
                   Generating Plan...
-                </>
+                
               ) : (
                 'Generate My Travel Plan'
               )}
