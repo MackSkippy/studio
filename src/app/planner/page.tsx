@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { refineTravelItinerary } from "@/ai/flows/refine-travel-itinerary"; // Assuming this path is correct
+import React, { useState, useEffect, useCallback, ChangeEvent } from "react";
+import { refineTravelItinerary } from "@/ai/flows/refine-travel-itinerary"; // Assuming path is correct
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -11,10 +11,14 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"; // Example: Using Alert for errors
-import { Loader2 } from "lucide-react"; // Example: Using lucide-react for loading icon
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Loader2 } from "lucide-react";
 
-// --- Define Types for better Type Safety ---
+// --- Constants ---
+const SESSION_STORAGE_KEY = "generatedPlan";
+
+// --- Types ---
+// (Keep existing PointOfInterest, Transportation, ItineraryItem interfaces)
 interface PointOfInterest {
   name: string;
   location: string;
@@ -33,70 +37,279 @@ interface Transportation {
 }
 
 interface ItineraryItem {
+  id?: string; // Add optional stable ID if possible from the source
   day: string; // Or number
   headline: string;
   description: string;
   pointsOfInterest?: PointOfInterest[];
   transportation?: Transportation;
-  // Consider adding a unique ID if possible: id?: string;
 }
 
-// --- Component ---
+// --- Helper Functions ---
+const generateMapLink = (query: string): string => {
+  // Correct Google Maps search URL structure
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+};
+
+// --- Sub-Components ---
+
+/**
+ * Renders a single item (day) in the itinerary.
+ */
+interface ItineraryItemViewProps {
+    item: ItineraryItem;
+    index: number; // Add index prop
+}
+const ItineraryItemView: React.FC<ItineraryItemViewProps> = ({ item, index }) => {
+  // Determine the label: Use item.day if it looks like a date, otherwise use "Day X"
+  const dayLabel = item.day && isNaN(Date.parse(item.day)) ? item.day : `Day ${index + 1}`;
+
+  return (
+    <li className="border-b pb-4 last:border-b-0 last:pb-0">
+       {/* Combine Day Label with Headline */}
+      <h3 className="font-semibold text-lg mb-1 text-muted-foreground">
+        <span className="font-bold">{dayLabel}:</span> {item.headline}
+      </h3>
+      <p className="mb-3 text-sm text-muted-foreground">{item.description}</p>
+
+      {/* Points of Interest */}
+      {item.pointsOfInterest && item.pointsOfInterest.length > 0 && (
+        <div className="mt-3 pl-2 border-l-2 border-gray-200 ml-1">
+          <h4 className="font-medium text-md mb-1 text-muted-foreground">Points of Interest:</h4>
+          <ul className="list-disc list-inside space-y-1">
+            {item.pointsOfInterest.map((poi, poiIndex) => (
+              // Use poi.name or a unique ID if available as key for better stability
+              // Include index in the key to ensure uniqueness if poi names repeat across days
+              <li key={`${item.id || `day-${index}`}-poi-${poi.name}-${poiIndex}`} className="text-sm text-muted-foreground">
+                {poi.location ? (
+                  <a
+                    href={generateMapLink(`${poi.name}, ${poi.location}`)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:underline"
+                  >
+                    {poi.name}
+                  </a>
+                ) : (
+                  <span>{poi.name}</span>
+                )}
+                {poi.location && <span className="text-gray-600"> ({poi.location})</span>}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Transportation */}
+      {item.transportation && (
+        <div className="mt-3 pl-2 border-l-2 border-gray-200 ml-1">
+          <h4 className="font-medium text-md mb-1 text-muted-foreground">Transportation:</h4>
+          <div className="text-sm space-y-0.5">
+             <p className="text-muted-foreground"><strong>Type:</strong> {item.transportation.type}</p>
+             <p className="text-muted-foreground">
+               <strong>From:</strong>{" "}
+               {item.transportation.departureStation || item.transportation.departureLocation ? (
+                 <a
+                   href={generateMapLink(item.transportation.departureStation || item.transportation.departureLocation)}
+                   target="_blank"
+                   rel="noopener noreferrer"
+                   className="text-blue-600 hover:underline"
+                 >
+                   {item.transportation.departureStation || item.transportation.departureLocation}
+                 </a>
+               ) : (
+                 <span>{item.transportation.departureStation || item.transportation.departureLocation || 'N/A'}</span>
+               )}
+               <span className="text-gray-600"> @ {item.transportation.departureTime}</span>
+             </p>
+             <p className="text-muted-foreground">
+                <strong>To:</strong>{" "}
+                {item.transportation.arrivalStation || item.transportation.arrivalLocation ? (
+                  <a
+                    href={generateMapLink(item.transportation.arrivalStation || item.transportation.arrivalLocation)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:underline"
+                  >
+                    {item.transportation.arrivalStation || item.transportation.arrivalLocation}
+                  </a>
+                ) : (
+                  <span>{item.transportation.arrivalStation || item.transportation.arrivalLocation || 'N/A'}</span>
+                )}
+                 <span className="text-gray-600"> @ {item.transportation.arrivalTime}</span>
+               </p>
+           </div>
+        </div>
+      )}
+    </li>
+  );
+};
+
+
+/**
+ * Displays the itinerary list or handles loading/error/empty states.
+ */
+interface ItineraryDisplayProps {
+  itinerary: ItineraryItem[] | null;
+  isLoading: boolean;
+  error: string | null;
+}
+const ItineraryDisplay: React.FC<ItineraryDisplayProps> = ({ itinerary, isLoading, error }) => {
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-10">
+        <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
+        <p className="ml-2 text-gray-600">Loading itinerary...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <Alert variant="destructive">
+        <AlertTitle>Error Loading Itinerary</AlertTitle>
+        <AlertDescription>{error}</AlertDescription>
+      </Alert>
+    );
+  }
+
+  if (!itinerary) {
+    return <p className="text-gray-600">No itinerary generated yet. Please use the travel preferences form to create one.</p>;
+  }
+
+  if (itinerary.length === 0) {
+    return <p className="text-gray-600">Your itinerary is currently empty.</p>;
+  }
+
+  return (
+    <ul className="space-y-6">
+      {itinerary.map((item, index) => ( // Pass index to ItineraryItemView
+        // Prefer stable unique item.id if available from the data source
+        <ItineraryItemView key={item.id || `day-${index}`} item={item} index={index} />
+      ))}
+    </ul>
+  );
+};
+
+
+/**
+ * Renders the form for submitting refinement feedback.
+ */
+interface RefinementFormProps {
+    feedback: string;
+    onFeedbackChange: (value: string) => void;
+    onSubmit: () => void;
+    isRefining: boolean;
+    refinementError: string | null;
+    isDisabled: boolean; // Combined disabled state
+}
+const RefinementForm: React.FC<RefinementFormProps> = ({
+    feedback,
+    onFeedbackChange,
+    onSubmit,
+    isRefining,
+    refinementError,
+    isDisabled
+}) => {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Refine Your Itinerary</CardTitle>
+        <CardDescription>
+          Tell us what you'd like to change, add, or remove.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <Textarea
+          value={feedback}
+          onChange={(e: ChangeEvent<HTMLTextAreaElement>) => onFeedbackChange(e.target.value)}
+          placeholder="e.g., 'Add more historical sites on Day 3', 'Find restaurants with vegetarian options near the hotel', 'Can we switch the museum visit on Day 2 with the park visit on Day 1?'"
+          rows={4}
+          disabled={isDisabled} // Disable textarea when refining or form is invalid
+        />
+        {/* Display refinement-specific error */}
+        {refinementError && (
+           <p className="text-sm text-red-600">{refinementError}</p>
+        )}
+        <Button
+          onClick={onSubmit}
+          disabled={isDisabled || !feedback.trim()} // Also disable if feedback is empty
+          className="w-full"
+        >
+          {isRefining ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Refining...
+            </>
+          ) : (
+            'Refine Itinerary'
+          )}
+        </Button>
+      </CardContent>
+    </Card>
+  );
+};
+
+
+// --- Main Component ---
 export default function TravelPlanner() {
   // State Definitions
-  const [itinerary, setItinerary] = useState<ItineraryItem[] | null>(null); // Use null for initial/loading state
+  const [itinerary, setItinerary] = useState<ItineraryItem[] | null>(null);
   const [feedback, setFeedback] = useState<string>("");
-  const [isLoading, setIsLoading] = useState<boolean>(false); // Loading state for API calls
-  const [error, setError] = useState<string | null>(null); // Separate state for API or loading errors
-  const [isInitialLoading, setIsInitialLoading] = useState<boolean>(true); // Track initial load from storage
+  const [isLoadingInitial, setIsLoadingInitial] = useState<boolean>(true); // Loading from storage
+  const [isRefining, setIsRefining] = useState<boolean>(false); // Loading during refinement API call
+  const [error, setError] = useState<string | null>(null); // General error (initial load, unexpected)
+  const [refinementError, setRefinementError] = useState<string | null>(null); // Specific error for refinement
+
 
   // --- Effects ---
+  // Load initial itinerary from session storage on mount
   useEffect(() => {
-    setIsInitialLoading(true);
-    setError(null); // Clear previous errors on mount
-    const storedItinerary = sessionStorage.getItem("generatedPlan");
+    setIsLoadingInitial(true);
+    setError(null);
+    setRefinementError(null); // Clear all errors on mount
 
-    if (storedItinerary) {
-      try {
-        const parsedItinerary = JSON.parse(storedItinerary);
-        // Basic validation: Check if it's an array
-        if (Array.isArray(parsedItinerary)) {
-          setItinerary(parsedItinerary);
+    try {
+        const storedItinerary = sessionStorage.getItem(SESSION_STORAGE_KEY);
+        if (storedItinerary) {
+            const parsedItinerary = JSON.parse(storedItinerary);
+            if (Array.isArray(parsedItinerary)) {
+                // TODO: Consider adding more robust validation here (e.g., using Zod)
+                // to ensure the structure matches ItineraryItem[]
+                setItinerary(parsedItinerary);
+            } else {
+                console.error("Stored itinerary is not an array:", parsedItinerary);
+                setError("Failed to load itinerary: Invalid format in storage.");
+                setItinerary(null);
+            }
         } else {
-          console.error("Stored itinerary is not an array:", parsedItinerary);
-          setError("Failed to load itinerary: Invalid format stored.");
-          setItinerary(null); // Ensure itinerary is null if format is bad
+             // No itinerary found in storage is not an error state, just empty.
+             setItinerary(null);
         }
-      } catch (parseError) {
+    } catch (parseError) {
         console.error("Error parsing itinerary from session storage:", parseError);
         setError("Failed to load itinerary: Could not parse stored data.");
-        setItinerary(null); // Ensure itinerary is null on parse error
-      }
-    } else {
-      // Explicitly set itinerary to empty array or keep null and handle in render
-      // Using null might be clearer to differentiate "not loaded" from "loaded but empty"
-      // Let's set it to null and let the renderer decide the message.
-       setItinerary(null);
-       // Optional: Set an info message instead of an error if desired
-       // setError("No itinerary found. Please generate one first.");
+        setItinerary(null);
+    } finally {
+        setIsLoadingInitial(false);
     }
-    setIsInitialLoading(false);
-  }, []); // Empty dependency array ensures this runs only once on mount
+  }, []); // Empty dependency array runs only once on mount
 
   // --- Handlers ---
   const handleRefineItinerary = useCallback(async () => {
-    // Ensure we have a valid itinerary structure to refine
+    // Basic validation before API call
     if (!Array.isArray(itinerary)) {
-      setError("Cannot refine: Current itinerary is not valid.");
+      setRefinementError("Cannot refine: Current itinerary is not loaded or invalid.");
       return;
     }
     if (!feedback.trim()) {
-        setError("Please provide feedback to refine the itinerary.")
-        return; // Should be caught by button disabled state, but good failsafe
+       setRefinementError("Please provide feedback to refine the itinerary.");
+       return;
     }
 
-    setIsLoading(true);
-    setError(null); // Clear previous errors before new request
+    setIsRefining(true);
+    setError(null); // Clear general errors
+    setRefinementError(null); // Clear previous refinement errors
 
     const input = {
       itinerary: JSON.stringify(itinerary), // Stringify the valid itinerary array
@@ -106,223 +319,85 @@ export default function TravelPlanner() {
 
     try {
       const result = await refineTravelItinerary(input);
+
       // Validate the refined itinerary structure before setting state
       if (result?.refinedItinerary) {
-         try {
-            const parsedRefinedItinerary = JSON.parse(result.refinedItinerary);
-            if (Array.isArray(parsedRefinedItinerary)) {
-              setItinerary(parsedRefinedItinerary);
-              sessionStorage.setItem('generatedPlan', JSON.stringify(parsedRefinedItinerary));
-
-            } else {
-              console.error("Refined itinerary is not an array:", result);
-              // Keep the old itinerary, show an error
-              setError("Failed to refine itinerary: Invalid response from refinement service. Refined itinerary is not a valid JSON array.");
-            }
-         } catch (parseError) {
-            console.error("Error parsing refined itinerary from refinement service:", parseError);
-            // Keep the old itinerary, show an error
-            setError("Failed to refine itinerary: Could not parse refined itinerary data.");
-         }
-        setFeedback(""); // Clear feedback field on success
-        // Optionally save the refined itinerary back to session storage
+        try {
+          const parsedRefinedItinerary = JSON.parse(result.refinedItinerary);
+          if (Array.isArray(parsedRefinedItinerary)) {
+             // TODO: Add runtime validation (e.g., Zod) for parsedRefinedItinerary
+             setItinerary(parsedRefinedItinerary);
+             sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(parsedRefinedItinerary));
+             setFeedback(""); // Clear feedback field on success
+          } else {
+            console.error("Refined itinerary data is not an array:", parsedRefinedItinerary);
+            setRefinementError("Failed to refine: The updated itinerary format is invalid.");
+          }
+        } catch (parseError) {
+          console.error("Error parsing refined itinerary:", parseError, result.refinedItinerary);
+          setRefinementError("Failed to refine: Could not understand the updated itinerary format.");
+        }
       } else {
-         console.error("Refined itinerary is missing or has invalid format:", result);
-        // Keep the old itinerary, show an error
-        setError("Failed to refine itinerary: Invalid response from refinement service.");
+        console.error("Refinement response missing 'refinedItinerary':", result);
+        setRefinementError("Failed to refine: No updated itinerary was received from the service.");
       }
-    } catch (refineError) {
-      console.error("Error refining itinerary:", refineError);
-      // Keep the old itinerary, show an error
-      setError(`Failed to refine itinerary. ${refineError instanceof Error ? refineError.message : 'Please try again.'}`);
+    } catch (apiError) {
+      console.error("Error calling refineTravelItinerary API:", apiError);
+      const message = apiError instanceof Error ? apiError.message : 'An unknown error occurred.';
+      setRefinementError(`Failed to refine itinerary: ${message}`);
     } finally {
-      setIsLoading(false);
+      setIsRefining(false);
     }
   }, [itinerary, feedback]); // Dependencies for the callback
 
-  // --- Rendering Logic ---
-  const renderMapLink = (query: string) => {
-    // Correct Google Maps search URL
-    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
-  };
 
-  const renderItineraryContent = () => {
-    if (isInitialLoading) {
-      return (
-        <div className="flex items-center justify-center py-10">
-          <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
-          <p className="ml-2 text-gray-600">Loading itinerary...</p>
-        </div>
-      );
-    }
+  // --- Derived State ---
+  const showRefinementForm = Array.isArray(itinerary) && itinerary.length > 0;
+  const isRefinementDisabled = isRefining || isLoadingInitial; // Disable form during any loading state
 
-    if (error) {
-      return (
-        <Alert variant="destructive">
-          <AlertTitle>Error</AlertTitle>
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      );
-    }
-
-    if (!itinerary) {
-        return <p className="text-gray-600">No itinerary generated yet. Please use the travel preferences form to create one.</p>;
-    }
-
-    if (itinerary.length === 0) {
-      return <p className="text-gray-600">Your itinerary is currently empty.</p>;
-    }
-
-    // Render the actual itinerary list
-    return (
-      <ul className="space-y-6">
-        {itinerary.map((item, index) => (
-          // Using index as key is acceptable if items don't have unique IDs and list order is stable per render
-          <li key={index} className="border-b pb-4 last:border-b-0 last:pb-0">
-             <h3 className="font-semibold text-lg mb-1 text-muted-foreground">{item.headline}</h3>
-            <p className="mb-3 text-sm text-muted-foreground">{item.description}</p>
-
-            {/* Points of Interest */}
-            {item.pointsOfInterest && item.pointsOfInterest.length > 0 && (
-              <div className="mt-3 pl-2 border-l-2 border-gray-200 ml-1">
-                <h4 className="font-medium text-md mb-1 text-muted-foreground">Points of Interest:</h4>
-                <ul className="list-disc list-inside space-y-1">
-                  {item.pointsOfInterest.map((poi, poiIndex) => (
-                    <li key={poiIndex} className="text-sm text-muted-foreground">
-                      {poi.location ? (
-                        <a
-                          href={renderMapLink(`${poi.name}, ${poi.location}`)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 hover:underline"
-                        >
-                          {poi.name}
-                        </a>
-                      ) : (
-                        <span>{poi.name}</span> // Display name without link if no location
-                      )}
-                      {poi.location && <span className="text-gray-600"> ({poi.location})</span>}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {/* Transportation */}
-            {item.transportation && (
-              <div className="mt-3 pl-2 border-l-2 border-gray-200 ml-1">
-                <h4 className="font-medium text-md mb-1 text-muted-foreground">Transportation:</h4>
-                 <div className="text-sm space-y-0.5">
-                     <p className="text-muted-foreground"><strong>Type:</strong> {item.transportation.type}</p>
-                     <p className="text-muted-foreground">
-                       <strong>From:</strong>{" "}
-                       {item.transportation.departureStation || item.transportation.departureLocation ? (
-                        <a
-                         href={renderMapLink(item.transportation.departureStation || item.transportation.departureLocation)}
-                         target="_blank"
-                         rel="noopener noreferrer"
-                         className="text-blue-600 hover:underline"
-                       >
-                         {item.transportation.departureStation || item.transportation.departureLocation}
-                       </a>
-                       ) : (
-                        <span>{item.transportation.departureStation || item.transportation.departureLocation}</span>
-                       )}
-                       <span className="text-gray-600"> @ {item.transportation.departureTime}</span>
-                     </p>
-                     <p className="text-muted-foreground">
-                       <strong>To:</strong>{" "}
-                       {item.transportation.arrivalStation || item.transportation.arrivalLocation ? (
-                         <a
-                           href={renderMapLink(item.transportation.arrivalStation || item.transportation.arrivalLocation)}
-                           target="_blank"
-                           rel="noopener noreferrer"
-                           className="text-blue-600 hover:underline"
-                         >
-                           {item.transportation.arrivalStation || item.transportation.arrivalLocation}
-                         </a>
-                       ) : (
-                         <span>{item.transportation.arrivalStation || item.transportation.arrivalLocation}</span>
-                       )}
-                        <span className="text-gray-600"> @ {item.transportation.arrivalTime}</span>
-                     </p>
-                </div>
-              </div>
-            )}
-          </li>
-        ))}
-      </ul>
-    );
-  };
-
-  // --- Component Return ---
+  // --- Render ---
   return (
-    <div className="container mx-auto max-w-4xl py-8 px-4"> {/* Added max-width */}
+    <div className="container mx-auto max-w-4xl py-8 px-4">
       <h1 className="text-3xl font-bold mb-6 text-center">Generated Itinerary</h1>
-      {/* Display general errors above cards if needed */}
-       {/* {error && !isInitialLoading && ( // Show API errors prominently if desired
-           <Alert variant="destructive" className="mb-6">
-               <AlertTitle>Refinement Error</AlertTitle>
-               <AlertDescription>{error}</AlertDescription>
-           </Alert>
-       )} */}
+
+      {/* Display general errors (like initial load failure) prominently */}
+      {error && !isLoadingInitial && (
+         <Alert variant="destructive" className="mb-6">
+             <AlertTitle>Error</AlertTitle>
+             <AlertDescription>{error}</AlertDescription>
+         </Alert>
+      )}
 
       <div className="grid grid-cols-1 gap-6">
         {/* Itinerary Display Card */}
         <Card>
           <CardHeader>
-            <CardTitle>Itinerary</CardTitle>
+            <CardTitle>Your Trip Plan</CardTitle>
             <CardDescription>
-              View your personalized travel itinerary below. Provide feedback to refine it.
+              View your personalized travel itinerary below.
             </CardDescription>
           </CardHeader>
           <CardContent>
-             {/* Render loading, error, or itinerary */}
-            {renderItineraryContent()}
+            <ItineraryDisplay
+              itinerary={itinerary}
+              isLoading={isLoadingInitial}
+              error={null} // Initial load errors handled above the card
+            />
           </CardContent>
         </Card>
 
-        {/* Feedback Card - Only show if an itinerary exists */}
-        {Array.isArray(itinerary) && itinerary.length > 0 && (
-           <Card>
-             <CardHeader>
-               <CardTitle>Refine Your Itinerary</CardTitle>
-               <CardDescription>
-                 Tell us what you'd like to change, add, or remove.
-               </CardDescription>
-             </CardHeader>
-             <CardContent className="space-y-4">
-               <Textarea
-                 value={feedback}
-                 onChange={(e) => setFeedback(e.target.value)}
-                 placeholder="e.g., 'Add more historical sites on Day 3', 'Find restaurants with vegetarian options near the hotel', 'Can we switch the museum visit on Day 2 with the park visit on Day 1?'"
-                 rows={4} // Suggest setting rows for better initial size
-                 disabled={isLoading} // Disable textarea during API call
-               />
-                {/* Display refinement-specific error near the button */}
-               {error && !isInitialLoading && (
-                   <p className="text-sm text-red-600">{error}</p>
-               )}
-               <Button
-                 onClick={handleRefineItinerary}
-                 disabled={isLoading || !feedback.trim() || !Array.isArray(itinerary)} // Disable if loading, no feedback, or no valid itinerary
-                 className="w-full"
-               >
-                 {isLoading ? (
-                   <>
-                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                     Refining...
-                   </>
-                 ) : (
-                   'Refine Itinerary'
-                 )}
-               </Button>
-             </CardContent>
-           </Card>
+        {/* Feedback Card - Conditionally Rendered */}
+        {showRefinementForm && (
+          <RefinementForm
+            feedback={feedback}
+            onFeedbackChange={setFeedback}
+            onSubmit={handleRefineItinerary}
+            isRefining={isRefining}
+            refinementError={refinementError}
+            isDisabled={isRefinementDisabled}
+          />
         )}
-
       </div>
     </div>
   );
 }
-

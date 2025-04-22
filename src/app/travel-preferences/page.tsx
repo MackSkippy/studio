@@ -1,18 +1,31 @@
 "use client";
 
-// Removed unused useEffect import
-import { useState, useCallback } from "react";
+// --- Core React/Next Imports ---
+import { useState, useCallback, useMemo, useRef } from "react"; // Added useMemo
 import { useRouter } from "next/navigation";
+import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd'; // Import drag and drop components
+
+// --- Third-Party Libraries ---
 import { format } from "date-fns";
+import { Loader2, Calendar as CalendarIcon } from "lucide-react";
+
+// --- Internal Libs & Utils ---
 import { cn } from "@/lib/utils";
+
+// --- Hooks ---
 import { useToast } from "@/hooks/use-toast";
 
-import { generateTravelPlan } from "@/ai/flows/generate-travel-itinerary";
+// --- API/AI Calls & TYPES ---
+// Import the function AND the input/output types from the backend flow
+import {
+  generateTravelPlan,
+  type GenerateTravelPlanInput, // Use the exact input type
+  type GenerateTravelPlanOutput // Use the exact output type
+} from "@/ai/flows/generate-travel-itinerary";
 
-// UI Components
+// --- UI Components ---
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-// Corrected import: Removed non-standard leading whitespace
 import {
   Card,
   CardContent,
@@ -21,16 +34,21 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Toaster } from "@/components/ui/toaster";
-import { Loader2 } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"; // Import Alert components
 
+// --- Data Imports ---
 import countryData from "@/data/countries.json";
 import activityData from "@/data/activities.json";
 
-// Define interfaces (Ensure these accurately match your JSON structure)
+// --- Types ---
 interface CountryData {
   countryCodeMap: { [key: string]: string[] };
   alternativeCountryNames: { [key: string]: string };
@@ -40,154 +58,217 @@ interface ActivityData {
   predefinedActivities: string[];
 }
 
-const { countryCodeMap, alternativeCountryNames }: CountryData = countryData;
-const { predefinedActivities }: ActivityData = activityData;
+// Remove the local TravelPlanInput interface, use GenerateTravelPlanInput instead
 
-const SESSION_STORAGE_PLAN_KEY = 'generatedPlan';
+// --- Constants ---
+const SESSION_STORAGE_PLAN_KEY = "generatedPlan";
+const TOAST_DESTRUCTIVE_VARIANT = "destructive" as const;
+const TOAST_DEFAULT_VARIANT = "default" as const;
+const TOAST_DURATION_MS = 5000;
+
+// --- Data Extraction ---
+const { countryCodeMap, alternativeCountryNames } = countryData as CountryData;
+const { predefinedActivities } = activityData as ActivityData;
+
 
 export default function TravelPreferences() {
+  // --- State ---
   const [destination, setDestination] = useState("");
-  const [destinationArrivalCity, setDestinationArrivalCity] = useState("");
-  const [destinationDepartureCity, setDestinationDepartureCity] = useState(""); // Consider making this dynamic or empty default
+  // Renamed for clarity: these are cities WITHIN the destination
+  const [arrivalCity, setArrivalCity] = useState(""); // Changed name
+  const [departureCity, setDepartureCity] = useState(""); // Changed name
   const [arrivalDate, setArrivalDate] = useState<Date | undefined>(undefined);
   const [returnDate, setReturnDate] = useState<Date | undefined>(undefined);
-  const [numberOfDays, setNumberOfDays] = useState<string>("");
-  const [specificLocations, setSpecificLocations] = useState<string[]>([]); // For checkboxes
-  const [availableCities, setAvailableCities] = useState<string[]>([]);
+  const [numberOfDays, setNumberOfDays] = useState<string>(""); // Keep as string for input control
+  const [specificLocations, setSpecificLocations] = useState<string[]>([]);
+  const [otherLocationInput, setOtherLocationInput] = useState("");
+  const [availableCities, setAvailableCities] = useState<string[]>([]); // Cities for specific locations checkboxes
   const [desiredActivities, setDesiredActivities] = useState<string[]>([]);
-  const [otherLocation, setOtherLocation] = useState(""); // For manual text input
-  // Removed useOtherLocation state - it's redundant with the new logic
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [showDragDropAlert, setShowDragDropAlert] = useState(true); // State for drag and drop alert visibility
 
+
+  // --- Hooks ---
   const router = useRouter();
   const { toast } = useToast();
 
-  const handleGeneratePlan = async () => {
-    if (!destination.trim()) {
-      toast({ title: "Missing Information", description: "Please enter a destination.", variant: "destructive" });
-      return;
+  // --- Validation Logic (Aligned with Backend Schema) ---
+  const validateForm = (): boolean => {
+    // Trim values before checking
+    const destinationTrimmed = destination.trim();
+    const arrivalCityTrimmed = arrivalCity.trim();
+    const departureCityTrimmed = departureCity.trim();
+    const numberOfDaysTrimmed = numberOfDays.trim();
+    const allDesiredActivities = desiredActivities.join(', ').trim(); // Combine for check
+
+    if (!destinationTrimmed) {
+      toast({ title: "Missing Information", description: "Please enter a destination.", variant: TOAST_DESTRUCTIVE_VARIANT });
+      return false;
     }
-    // Require either arrival date OR number of days. Return date is optional.
-    if (!arrivalDate && !numberOfDays) {
-      toast({ title: "Missing Information", description: "Please select an arrival date or enter the number of days for your trip.", variant: "destructive" });
-      return;
+    // --- Enforce required fields ---
+    if (!arrivalCityTrimmed) {
+        toast({ title: "Missing Information", description: "Please enter the arrival city within your destination.", variant: TOAST_DESTRUCTIVE_VARIANT });
+        return false;
     }
-    // Optional: Add validation if returnDate is before arrivalDate
+    if (!departureCityTrimmed) {
+        toast({ title: "Missing Information", description: "Please enter the departure city within your destination.", variant: TOAST_DESTRUCTIVE_VARIANT });
+        return false;
+    }
+     if (!allDesiredActivities) {
+        toast({ title: "Missing Information", description: "Please select at least one desired activity or describe your interests.", variant: TOAST_DESTRUCTIVE_VARIANT });
+        // Consider adding a text area for activities later if needed
+        return false;
+    }
+    // --- ---
+
+    if (!arrivalDate && !numberOfDaysTrimmed) {
+      toast({ title: "Missing Information", description: "Please select an arrival date OR enter the number of days.", variant: TOAST_DESTRUCTIVE_VARIANT });
+      return false;
+    }
     if (arrivalDate && returnDate && returnDate < arrivalDate) {
-        toast({ title: "Invalid Dates", description: "Return date cannot be before arrival date.", variant: "destructive" });
+      toast({ title: "Invalid Dates", description: "Return date cannot be before the arrival date.", variant: TOAST_DESTRUCTIVE_VARIANT });
+      return false;
+    }
+    if (numberOfDaysTrimmed && !/^[1-9]\d*$/.test(numberOfDaysTrimmed)) {
+        toast({ title: "Invalid Input", description: "Number of days must be a positive whole number.", variant: TOAST_DESTRUCTIVE_VARIANT });
+      return false;
+    }
+    return true;
+  };
+
+  // --- Data Preparation Logic (Returns GenerateTravelPlanInput | null) ---
+  const prepareApiInput = (): GenerateTravelPlanInput | null => {
+    // Combine specific locations
+    const manuallyAddedLocations = otherLocationInput.split(",").map(loc => loc.trim()).filter(Boolean);
+    const allSpecificLocations = Array.from(new Set([...specificLocations, ...manuallyAddedLocations]));
+    const specificLocationsString = allSpecificLocations.length > 0 ? allSpecificLocations.join(", ") : undefined;
+
+    // Combine desired activities (already validated to be non-empty)
+    const desiredActivitiesString = desiredActivities.join(", ").trim(); // Should always have content if validation passed
+
+    // Format Dates String
+    let datesString = "";
+    const numDaysInt = parseInt(numberOfDays.trim(), 10);
+    const isValidNumDays = !isNaN(numDaysInt) && numDaysInt > 0;
+
+    if (arrivalDate) {
+      const formattedArrival = format(arrivalDate, "yyyy-MM-dd");
+      if (numberOfDays.trim() && isValidNumDays) {
+        // Use format AI might understand better
+        datesString = `${formattedArrival} for ${numDaysInt} days`;
+      } else if (returnDate) {
+        datesString = `${formattedArrival} to ${format(returnDate, "yyyy-MM-dd")}`;
+      } else {
+        datesString = formattedArrival; // Only arrival date
+      }
+    } else if (numberOfDays.trim() && isValidNumDays) {
+      datesString = `Trip for ${numDaysInt} days`; // AI needs context (today?) or make start date mandatory
+    } else {
+      console.error("Invalid date/duration state reached preparation stage.");
+      toast({ title: "Error", description: "Invalid date or duration configuration.", variant: TOAST_DESTRUCTIVE_VARIANT });
+      return null;
+    }
+
+    // Prepare numberOfDays as number | undefined for the API
+    // Send number only if it's the primary duration indicator (no return date)
+    const numberOfDaysForApi: number | undefined =
+        (numberOfDays.trim() && isValidNumDays && !returnDate)
+        ? numDaysInt
+        : undefined;
+        // Note: If both arrival date and number of days are set (and no return date),
+        // the number of days is implicitly defined by the datesString ("... for X days").
+        // Sending it *again* in numberOfDays might be redundant or confusing for the AI.
+        // Let's send undefined if returnDate is set OR if arrivalDate is set (as duration is in datesString).
+        // Only send it if ONLY numberOfDays is the source of duration info.
+        // --> Refined logic: Send if user explicitly typed it AND there's no return date.
+    const finalNumberOfDaysForApi = (numberOfDays.trim() && isValidNumDays && !returnDate) ? numDaysInt : undefined;
+
+
+    // Construct the input object matching GenerateTravelPlanInput type
+    const input: GenerateTravelPlanInput = {
+      destination: destination.trim(),
+      arrivalCity: arrivalCity.trim(),     // Use correct state variable, now required
+      departureCity: departureCity.trim(),   // Use correct state variable, now required
+      dates: datesString,
+      numberOfDays: finalNumberOfDaysForApi, // Send the parsed number or undefined
+      specificLocations: specificLocationsString,
+      desiredActivities: desiredActivitiesString, // Now required, send the string
+      feedback: undefined, // Explicitly undefined if not used
+    };
+
+    // Final check to ensure required fields aren't accidentally empty after trim
+     if (!input.destination || !input.arrivalCity || !input.departureCity || !input.dates || !input.desiredActivities) {
+         console.error("Data preparation resulted in missing required fields:", input);
+         toast({ title: "Error", description: "Failed to prepare data correctly. Required fields are missing.", variant: TOAST_DESTRUCTIVE_VARIANT });
+         return null;
+     }
+
+    return input;
+  };
+
+
+  // --- Event Handlers ---
+  const handleGeneratePlan = async () => {
+    if (!validateForm()) {
+      return; // Stop if validation fails
+    }
+
+    const inputData = prepareApiInput();
+    if (!inputData) {
+        // Error occurred during preparation (toast shown in prepareApiInput)
         return;
     }
 
     setIsLoading(true);
 
-    // --- Prepare Input Data ---
-    // Combine selected checkboxes and manually entered locations
-    let allSpecificLocations = [...specificLocations];
-    if (otherLocation.trim()) {
-      // Split comma-separated string, trim whitespace, filter out empty entries
-      const manuallyAddedLocations = otherLocation.split(',')
-                                          .map(loc => loc.trim())
-                                          .filter(Boolean);
-      // Avoid duplicates if user typed a city that was also checked
-      manuallyAddedLocations.forEach(loc => {
-          if (!allSpecificLocations.includes(loc)) {
-              allSpecificLocations.push(loc);
-          }
-      });
-    }
-
-    let datesString = '';
-    if (arrivalDate) {
-        // Prioritize number of days if both number of days and return date are somehow provided
-        if (numberOfDays) {
-          const numDays = parseInt(numberOfDays, 10); // Parse the string
-          if (!isNaN(numDays) && numDays > 0) {
-            datesString = `${format(arrivalDate, "yyyy-MM-dd")} for ${numDays} days`;
-          } else {
-            // Handle invalid number of days string if necessary, though validation should prevent this
-             toast({ title: "Invalid Input", description: "Number of days is invalid.", variant: "destructive" });
-             setIsLoading(false);
-             return;
-          }
-        } else if (returnDate) {
-            datesString = `${format(arrivalDate, "yyyy-MM-dd")} to ${format(returnDate, "yyyy-MM-dd")}`;
-        } else {
-            // Only arrival date is provided - backend needs to handle this case
-            datesString = format(arrivalDate, "yyyy-MM-dd");
-        }
-    } else if (numberOfDays) {
-        // Handle case where only number of days is provided (no arrival date)
-        // This might imply "X days starting soon" or need clarification.
-        // Adjust based on backend requirements. For now, just pass the number.
-        // datesString = `Trip for ${numberOfDays} days`; // Or adjust input object
-         const numDays = parseInt(numberOfDays, 10);
-         if (isNaN(numDays) || numDays <= 0) {
-             toast({ title: "Invalid Input", description: "Number of days is invalid.", variant: "destructive" });
-             setIsLoading(false);
-             return;
-         }
-        // Modify the input object or datesString based on how generateTravelPlan expects this
-    }
-    // If no datesString constructed but validation passed, it means only numberOfDays was entered.
-    // Decide how the backend should interpret { destination: 'Paris', numberOfDays: '5' } without dates.
-    // Adding a placeholder date handling if needed:
-    if (!datesString && numberOfDays) {
-       datesString = `Trip for ${numberOfDays} days`; // Example: adjust as needed
-    }
-
-
-    const input = {
-      destination: destination.trim(),
-      departureCity: destinationDepartureCity.trim(), // User's home city
-      arrivalCity: destinationArrivalCity.trim(), // City user flies into at destination
-      dates: datesString,
-      // Send numberOfDays only if it was explicitly entered and valid
-      numberOfDays: (numberOfDays && parseInt(numberOfDays, 10) > 0) ? numberOfDays : undefined,
-      specificLocations: allSpecificLocations.join(', '), // Send combined list
-      desiredActivities: desiredActivities.join(', '),
-      feedback: "", // Placeholder
-    };
-
-    // Remove numberOfDays from input if it was used to calculate datesString with arrivalDate
-    // to avoid redundancy, unless backend specifically needs both formats.
-    if (arrivalDate && numberOfDays && input.dates.includes(" for ")) {
-        // delete input.numberOfDays; // Or set to undefined, depending on backend expectations
-        // Keep it if backend might use it for validation or separate logic
-    }
-
-
     try {
-      const result = await generateTravelPlan(input);
-      // Assuming result structure is { plan: YourPlanType | null | undefined }
-      const generatedPlan = result?.plan;
+      console.log("Generating plan with input:", JSON.stringify(inputData, null, 2)); // Log validated input
+      // Call the imported function, expect GenerateTravelPlanOutput
+      const result: GenerateTravelPlanOutput = await generateTravelPlan(inputData);
 
-      if (!generatedPlan || (typeof generatedPlan === 'object' && Object.keys(generatedPlan).length === 0)) {
-        console.warn("generateTravelPlan returned no plan or an empty plan object:", result);
-        toast({ title: "Plan Generation Issue", description: "No travel plan could be generated. Try adjusting your preferences or being more specific.", variant: "destructive", duration: 5000 });
-      } else {
+      // Access the plan array directly from the typed result
+      const generatedPlan = result.plan;
+
+      // Check if the plan is a non-empty array
+      if (Array.isArray(generatedPlan) && generatedPlan.length > 0) {
         sessionStorage.setItem(SESSION_STORAGE_PLAN_KEY, JSON.stringify(generatedPlan));
-        toast({ title: "Success!", description: "Your travel plan is ready!", variant: "default" });
+        toast({
+          title: "Success!",
+          description: "Your travel plan is ready!",
+          variant: TOAST_DEFAULT_VARIANT,
+        });
         router.push(`/planner`); // Navigate to the planner page
+      } else {
+        // Handle cases where AI might return success but an empty plan array
+        console.warn("generateTravelPlan returned a valid structure but with an empty plan array:", result);
+        toast({
+          title: "Plan Generation Issue",
+          description: "No specific activities could be generated for your plan. Try adjusting your preferences or being more specific.",
+          variant: TOAST_DESTRUCTIVE_VARIANT,
+          duration: TOAST_DURATION_MS,
+        });
       }
-
     } catch (error) {
       console.error("Error generating travel plan:", error);
+      // Display the error message from the backend or flow if available
+      const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred.";
       toast({
         title: "Generation Failed",
-        description: `Could not generate plan. ${error instanceof Error ? error.message : 'An unexpected error occurred. Please try again.'}`,
-        variant: "destructive",
-        duration: 5000
+        description: `Could not generate plan. ${errorMessage} Please try again.`,
+        variant: TOAST_DESTRUCTIVE_VARIANT,
+        duration: TOAST_DURATION_MS,
       });
     } finally {
       setIsLoading(false);
     }
   };
 
+  // Using useCallback for handlers that depend on state setters, though less critical here
   const handleDestinationChange = useCallback((newDestinationValue: string) => {
-    const newDestination = newDestinationValue;
-    setDestination(newDestination);
+    const trimmedValue = newDestinationValue.trim();
+    setDestination(trimmedValue); // Update state with trimmed value
 
-    const destinationLower = newDestination.trim().toLowerCase();
+    const destinationLower = trimmedValue.toLowerCase();
     let cities: string[] = [];
 
     if (destinationLower) {
@@ -198,290 +279,288 @@ export default function TravelPreferences() {
     }
 
     setAvailableCities(cities);
+    // Reset dependent fields on destination change
+    setSpecificLocations([]);
+    setOtherLocationInput("");
+    setArrivalCity(""); // Reset arrival city
+    setDepartureCity(""); // Reset departure city
+    // Optionally reset activities if they are destination-specific
+    // setDesiredActivities([]);
+  }, [alternativeCountryNames, countryCodeMap]); // Dependencies
 
-    // Reset selections that depend on the destination
-    setSpecificLocations([]); // Clear checked cities
-    setDesiredActivities([]); // Clear selected activities (or keep if desired)
-    setOtherLocation(""); // Clear manually typed locations
-    setDestinationArrivalCity(""); // Clear arrival city as it depends on destination
-    // Keep dates, departure city etc. unless they should be reset too
 
-  }, [/* Dependencies: countryCodeMap, alternativeCountryNames */]); // Add dependencies if these come from props/context
-
-  const toggleSelection = (item: string, currentSelection: string[], setSelection: React.Dispatch<React.SetStateAction<string[]>>) => {
-    setSelection(prev =>
+  // Generic toggle function (remains the same)
+  const toggleSelection = useCallback((
+    item: string,
+    currentSelection: string[],
+    setSelection: React.Dispatch<React.SetStateAction<string[]>>
+  ) => {
+    setSelection((prev) =>
       prev.includes(item)
-        ? prev.filter(val => val !== item)
+        ? prev.filter((val) => val !== item)
         : [...prev, item]
     );
-  };
+  }, []); // No dependencies needed for the generic function logic
 
-  const toggleSpecificLocation = (location: string) => {
+
+  const toggleSpecificLocation = useCallback((location: string) => {
     toggleSelection(location, specificLocations, setSpecificLocations);
-  };
+  }, [specificLocations, toggleSelection]); // Add dependencies
 
-  const toggleDesiredActivity = (activity: string) => {
+
+  const toggleDesiredActivity = useCallback((activity: string) => {
     toggleSelection(activity, desiredActivities, setDesiredActivities);
-  };
+  }, [desiredActivities, toggleSelection]); // Add dependencies
 
- const handleNumberOfDaysChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+
+  // Handle input for number of days (remains the same)
+  const handleNumberOfDaysChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    // Allow empty input or positive integers only (basic validation)
-    // Use regex test method
-    if (value === "" || /^[1-9]\d*$/.test(value)) { // Fixed regex - no need for double escape here
+    if (value === "" || /^[1-9]\d*$/.test(value)) {
       setNumberOfDays(value);
-       // Optionally clear return date if number of days is entered
-       // if (value !== "" && returnDate) {
-       //    setReturnDate(undefined);
-       // }
+       // If user types in days, clear the return date as they conflict
+      if (value !== "" && returnDate) {
+         setReturnDate(undefined);
+      }
     }
   };
 
- const handleReturnDateSelect = (date: Date | undefined) => {
-       setReturnDate(date);
-       // Optionally clear number of days if return date is selected
-       // if (date && numberOfDays !== "") {
-       //   setNumberOfDays("");
-       // }
+  // Handle selecting a return date
+  const handleReturnDateSelect = (date: Date | undefined) => {
+    setReturnDate(date);
+    // If user selects a return date, clear number of days input
+    if (date && numberOfDays !== "") {
+        setNumberOfDays("");
+    }
   };
 
+  // --- Render Logic ---
+  const today = useMemo(() => { // Use useMemo for static value
+      const d = new Date();
+      d.setHours(0, 0, 0, 0);
+      return d;
+  }, []);
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0); // Normalize to start of day
+  // Derived state for submit button disabled status
+  const isSubmitDisabled = useMemo(() => {
+      const requiredFieldsFilled = destination.trim() &&
+                                arrivalCity.trim() &&
+                                departureCity.trim() &&
+                                desiredActivities.length > 0;
+      const dateOrDurationProvided = arrivalDate || numberOfDays.trim();
+      return isLoading || !requiredFieldsFilled || !dateOrDurationProvided;
+  }, [isLoading, destination, arrivalCity, departureCity, desiredActivities, arrivalDate, numberOfDays]);
+
+  const submitHintText = useMemo(() => {
+      if (isLoading) return ""; // No hint when loading
+      if (!destination.trim()) return "Please provide a destination.";
+      if (!arrivalCity.trim()) return "Please provide the arrival city.";
+      if (!departureCity.trim()) return "Please provide the departure city.";
+      if (desiredActivities.length === 0) return "Please select desired activities.";
+      if (!arrivalDate && !numberOfDays.trim()) return "Please provide arrival date or number of days.";
+      return ""; // All good
+  }, [destination, arrivalCity, departureCity, desiredActivities, arrivalDate, numberOfDays, isLoading]);
+
 
   return (
-    <div className="container mx-auto p-4 max-w-2xl">
-      <Toaster />
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-2xl font-bold">Travel Preferences</CardTitle>
-          <CardDescription>
-            Fill out the form below to generate a personalized itinerary.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-6"> {/* Increased spacing */}
+    
+      
+        
+          
+            Travel Preferences
+          
+          
+            Fill out the form below to generate a personalized itinerary. Fields marked with * are required.
+          
+        
+        
+          
             {/* Destination */}
-            <div className="space-y-2">
-              <Label htmlFor="destination">Destination (Country or City)</Label>
-              <Input
-                id="destination"
-                type="text"
-                value={destination}
-                onChange={(e) => handleDestinationChange(e.target.value)}
-                placeholder="e.g., Japan, Paris, Italy"
-                aria-required="true"
-                disabled={isLoading}
-              />
-            </div>
+            
+              
+                Destination (Country or Major Region) *
+              
+              
+                e.g., Japan, Italy, California Coast
+              
+            
+            
 
-            {/* Arrival/Departure Cities */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                 <div className="space-y-2">
-                    <Label htmlFor="destinationArrivalCity">Arrival City (at Destination)</Label>
-                    <Input
-                        id="destinationArrivalCity"
-                        type="text"
-                        value={destinationArrivalCity}
-                        onChange={(e) => setDestinationArrivalCity(e.target.value)}
-                        placeholder="e.g., Tokyo, Rome (Optional)"
-                        disabled={isLoading || !destination.trim()} // Disable if no destination
-                    />
-                 </div>
-                 <div className="space-y-2">
-                     <Label htmlFor="destinationDepartureCity">Departure City (at Destination)</Label>
-                     <Input
-                        id="destinationDepartureCity"
-                        type="text"
-                        value={destinationDepartureCity}
-                        onChange={(e) => setDestinationDepartureCity(e.target.value)}
-                        placeholder="e.g., Osaka, Florence"
-                        disabled={isLoading}
-                     />
-                 </div>
-            </div>
-
+            {/* Arrival/Departure Cities at Destination */}
+            
+              
+                {/* Label updated to show requirement */}
+                
+                  Arrival City (within Destination) *
+                
+                
+                  e.g., Tokyo, Rome, Los Angeles (LAX)
+                
+              
+              
+                 {/* Label updated to show requirement */}
+                
+                  Destination Departure City *
+                
+                
+                  e.g., Osaka, Florence, San Francisco (SFO)
+                
+              
+            
+          
 
             {/* Dates & Duration */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
+            
               {/* Arrival Date */}
-              <div className="space-y-2">
-                <Label htmlFor="arrivalDate">Arrival Date</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      id="arrivalDate"
-                      variant={"outline"}
-                      className={cn(
-                        "w-full justify-start text-left font-normal",
-                        !arrivalDate && "text-muted-foreground"
-                      )}
-                      disabled={isLoading}
-                    >
-                      {/* Calendar Icon Here */}
-                      {arrivalDate ? format(arrivalDate, "PPP") : <span>Pick a date</span>}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0">
-                    <Calendar
-                      mode="single"
-                      selected={arrivalDate}
-                      onSelect={setArrivalDate}
-                      disabled={(date) => date < today || isLoading}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
+              
+                
+                   Arrival Date *
+                 
+                 
+                  
+                    
+                      
+                       
+                        {arrivalDate ? format(arrivalDate, "PPP") : 
+                          'Pick a date'
+                        }
+                      
+                    
+                  
+                  
+                    
+                      
+                        
+                          
+                           
+                        
+                        
+                      
+                      
+                      
+                    
+                  
+                
+                Required unless using Number of Days.
+              
+              
 
-              {/* Return Date */}
-              <div className="space-y-2">
-                <Label htmlFor="returnDate">Return Date (Optional)</Label>
-                 <Popover>
-                   <PopoverTrigger asChild>
-                     <Button
-                       id="returnDate"
-                       variant={"outline"}
-                       className={cn(
-                         "w-full justify-start text-left font-normal",
-                         !returnDate && "text-muted-foreground"
-                       )}
-                      disabled={isLoading || !arrivalDate} // Also disable if no arrival date
-                     >
-                       {/* Calendar Icon Here */}
-                       {returnDate ? format(returnDate, "PPP") : <span>Pick a date</span>}
-                     </Button>
-                   </PopoverTrigger>
-                   <PopoverContent className="w-auto p-0">
-                     <Calendar
-                       mode="single"
-                       selected={returnDate}
-                       // Use dedicated handler to potentially clear numberOfDays
-                       onSelect={handleReturnDateSelect}
-                       disabled={(date) =>
-                         date < today ||
-                         (arrivalDate && date <= arrivalDate) || // Prevent return before or on arrival
-                         isLoading
-                       }
-                       initialFocus
-                     />
-                   </PopoverContent>
-                 </Popover>
-              </div>
+              {/* Number of Days */}
+              
+                
+                  Number of Days
+                
+                
+                  e.g., 7
+                
+                
+                 Use if no Return Date. Cleared if Return Date selected.
+              
+            
+          
 
-               {/* Number of Days */}
-               <div className="space-y-2">
-                <Label htmlFor="numberOfDays">Number of Days (Alternative)</Label>
-                <Input
-                    id="numberOfDays"
-                    type="number" // Keeps spinner controls, validation handled by state/regex
-                    min="1"
-                    step="1"
-                    value={numberOfDays}
-                    onChange={handleNumberOfDaysChange}
-                    placeholder="e.g., 7"
-                    className="w-full" // Allow flexible width
-                    disabled={isLoading} // Maybe disable if returnDate is set? Or allow override.
-                    aria-label="Number of days for the trip (alternative to return date)"
-                />
-               </div>
-            </div>
-
-            {/* Conditional Sections */}
+            {/* --- Conditional Sections (Based on Destination) --- */}
             {destination.trim() && (
-              <div className="space-y-6"> {/* Add spacing for these sections */}
+              
                 {/* Specific Locations */}
-                <div className="space-y-3">
-                  <Label className="font-medium">Specific Locations (Optional)</Label>
-                   <p className="text-sm text-muted-foreground">
-                     Select suggested cities or add your own below.
-                   </p>
+                
+                  
+                    Specific Locations (Optional)
+                  
+                  
+                    Select suggested cities/landmarks for '{destination}' or add your own below (comma-separated).
+                  
                   {/* Checkboxes for available cities */}
                   {availableCities.length > 0 && (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-x-4 gap-y-2 pt-2">
-                      {availableCities.map((city) => (
-                        <div key={city} className="flex items-center space-x-2">
-                          <Checkbox
-                            id={`city-${city.replace(/\s+/g, '-')}`}
-                            checked={specificLocations.includes(city)}
-                            onCheckedChange={() => toggleSpecificLocation(city)}
-                            disabled={isLoading}
-                          />
-                          <Label
-                            htmlFor={`city-${city.replace(/\s+/g, '-')}`}
-                            className="font-normal cursor-pointer"
-                          >
-                            {city}
-                          </Label>
-                        </div>
-                      ))}
-                    </div>
+                    
+                      {availableCities.map((city) => {
+                        const cityId = `city-${city.replace(/\s+/g, '-').toLowerCase()}`;
+                        return (
+                          
+                            
+                              
+                                
+                                
+                              
+                              
+                                
+                                  {city}
+                                
+                              
+                            
+                          
+                        );
+                      })}
+                    
                   )}
 
-                  {/* Always show the input for other locations */}
-                  <div className="pt-2">
-                      <Label htmlFor="otherLocation" className="text-sm font-medium">
-                         Add other specific locations (comma-separated)
-                      </Label>
-                      <Input
-                         id="otherLocation"
-                         type="text"
-                         value={otherLocation}
-                         onChange={(e) => setOtherLocation(e.target.value)}
-                         placeholder="e.g., Eiffel Tower, Kyoto, a specific town"
-                         disabled={isLoading}
-                         className="mt-1"
-                      />
-                  </div>
-                </div>
+                  {/* Input for other locations */}
+                  
+                      
+                       Add other specific places (comma-separated)
+                      
+                      
+                        Add other places: Eiffel Tower, Kyoto, etc.
+                      
+                    
+                  
+                
 
                 {/* Desired Activities */}
-                <div className="space-y-3">
-                  <Label className="font-medium">Desired Activities (Optional)</Label>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-x-4 gap-y-2 pt-2">
-                    {predefinedActivities.map((activity) => (
-                      <div key={activity} className="flex items-center space-x-2">
-                        <Checkbox
-                          id={`activity-${activity.replace(/\s+/g, '-')}`}
-                          checked={desiredActivities.includes(activity)}
-                          onCheckedChange={() => toggleDesiredActivity(activity)}
-                          disabled={isLoading}
-                        />
-                        <Label
-                          htmlFor={`activity-${activity.replace(/\s+/g, '-')}`}
-                          className="font-normal cursor-pointer"
-                        >
-                          {activity}
-                        </Label>
-                      </div>
-                    ))}
-                     {/* Option to add custom activities */}
-                     {/* <div className="col-span-full pt-2"> <Label htmlFor="otherActivities">Other Activities:</Label> <Input id="otherActivities" ... /> </div> */}
-                  </div>
-                </div>
-              </div>
+                
+                   {/* Label updated to show requirement */}
+                  
+                    Desired Activities *
+                  
+                  
+                    Select your interests. At least one is required.
+                  
+                  
+                    {predefinedActivities.map((activity) => {
+                        const activityId = `activity-${activity.replace(/\s+/g, '-').toLowerCase()}`;
+                        return (
+                          
+                            
+                              
+                                
+                                
+                              
+                              
+                                
+                                  {activity}
+                                
+                              
+                            
+                          
+                        );
+                      })}
+                    {/* TODO: Consider adding an "Other Activities" text input if needed */}
+                  
+                
+              
             )}
 
             {/* Submit Button */}
-            <Button
-              type="button" // Explicitly type button if not in a <form> element
-              onClick={handleGeneratePlan}
-              disabled={isLoading || !destination.trim() || (!arrivalDate && !numberOfDays)}
-              className="w-full mt-4" // Add margin top
-              size="lg" // Make button larger
-            >
+            
               {isLoading ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  
                   Generating Plan...
                 </>
               ) : (
                 'Generate My Travel Plan'
               )}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+            
+             {/* Add hint text for disabled button state */}
+             {isSubmitDisabled && !isLoading && submitHintText && (
+               
+                  {submitHintText}
+               
+             )}
+          
+        
+      
+    
   );
 }
+
