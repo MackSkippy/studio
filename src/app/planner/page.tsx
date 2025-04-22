@@ -179,16 +179,16 @@ export default function TravelPlanner() {
         {itinerary.map((item, index) => (
           // Using index as key is acceptable if items don't have unique IDs and list order is stable per render
           <li key={index} className="border-b pb-4 last:border-b-0 last:pb-0">
-             <h3 className="font-semibold text-lg mb-1">{item.headline}</h3>
-            <p className="mb-3 text-sm text-gray-700">{item.description}</p>
+             <h3 className="font-semibold text-lg mb-1 text-muted-foreground">{item.headline}</h3>
+            <p className="mb-3 text-sm text-muted-foreground">{item.description}</p>
 
             {/* Points of Interest */}
             {item.pointsOfInterest && item.pointsOfInterest.length > 0 && (
               <div className="mt-3 pl-2 border-l-2 border-gray-200 ml-1">
-                <h4 className="font-medium text-md mb-1">Points of Interest:</h4>
+                <h4 className="font-medium text-md mb-1 text-muted-foreground">Points of Interest:</h4>
                 <ul className="list-disc list-inside space-y-1">
                   {item.pointsOfInterest.map((poi, poiIndex) => (
-                    <li key={poiIndex} className="text-sm">
+                    <li key={poiIndex} className="text-sm text-muted-foreground">
                       {poi.location ? (
                         <a
                           href={renderMapLink(`${poi.name}, ${poi.location}`)}
@@ -211,10 +211,10 @@ export default function TravelPlanner() {
             {/* Transportation */}
             {item.transportation && (
               <div className="mt-3 pl-2 border-l-2 border-gray-200 ml-1">
-                <h4 className="font-medium text-md mb-1">Transportation:</h4>
+                <h4 className="font-medium text-md mb-1 text-muted-foreground">Transportation:</h4>
                  <div className="text-sm space-y-0.5">
-                     <p><strong>Type:</strong> {item.transportation.type}</p>
-                     <p>
+                     <p className="text-muted-foreground"><strong>Type:</strong> {item.transportation.type}</p>
+                     <p className="text-muted-foreground">
                        <strong>From:</strong>{" "}
                        {item.transportation.departureStation || item.transportation.departureLocation ? (
                         <a
@@ -230,7 +230,7 @@ export default function TravelPlanner() {
                        )}
                        <span className="text-gray-600"> @ {item.transportation.departureTime}</span>
                      </p>
-                     <p>
+                     <p className="text-muted-foreground">
                        <strong>To:</strong>{" "}
                        {item.transportation.arrivalStation || item.transportation.arrivalLocation ? (
                          <a
@@ -325,3 +325,4 @@ export default function TravelPlanner() {
     </div>
   );
 }
+
