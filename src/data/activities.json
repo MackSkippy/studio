@@ -1,22 +1,123 @@
 {
-  "predefinedActivities": [
-    "Scenery",
-    "Cultural hubs",
-    "Historical Landmarks",
-    "Museums",
-    "Street Food",
-    "Fine Dining",
-    "Unique Goods",
-    "Clothes Shopping",
-    "Pools and Beaches",
-    "Spas and Onsens",
-    "Hiking",
-    "Extreme Sports",
-    "Animal Encounters",
-    "Festivals",
-    "Theme Parks",
-    "Bars and Nightclubs",
-    "Craft Beer/Wine/Liquor",
-    "Sports"
+  "activityGroups": [
+    {
+      "theme": "Eat & Drink",
+      "activities": [
+        "Fine Dining",
+        "Casual Eateries",
+        "Street Food",
+        "Cafes & Bakeries",
+        "Local Delicacies",
+        "Food Markets",
+        "Craft Beer/Breweries",
+        "Wine Tasting/Wineries",
+        "Distilleries/Liquor Tasting",
+        "Unique Bars",
+        "Cooking Classes"
+      ]
+    },
+    {
+      "theme": "Culture & History",
+      "activities": [
+        "Museums (Art, History, Science, Quirky)",
+        "Art Galleries",
+        "Historical Landmarks",
+        "Archaeological Sites",
+        "Architectural Highlights",
+        "Cultural Centers",
+        "Places of Worship (Churches, Temples, Mosques, etc.)",
+        "Libraries & Bookstores (Iconic/Unique)",
+        "Local Neighborhoods Exploration"
+      ]
+    },
+    {
+      "theme": "Nature & Outdoors",
+      "activities": [
+        "Scenic Viewpoints",
+        "Parks & Gardens",
+        "Hiking & Trekking",
+        "Beaches & Coastlines",
+        "Lakes & Rivers",
+        "Mountains",
+        "National Parks & Reserves",
+        "Waterfalls",
+        "Wildlife Viewing / Animal Encounters",
+        "Stargazing Spots"
+      ]
+    },
+    {
+      "theme": "Entertainment & Nightlife",
+      "activities": [
+        "Live Music Venues",
+        "Theater & Performances",
+        "Cinemas",
+        "Bars & Pubs",
+        "Nightclubs",
+        "Comedy Clubs",
+        "Casinos"
+      ]
+    },
+    {
+      "theme": "Activities & Adventure",
+      "activities": [
+        "Theme Parks & Amusement Parks",
+        "Water Parks",
+        "Zoos & Aquariums",
+        "Water Sports",
+        "Winter Sports",
+        "Cycling / Bike Rentals",
+        "Extreme Sports",
+        "Workshops & Classes",
+        "Guided Tours"
+      ]
+    },
+    {
+      "theme": "Shopping",
+      "activities": [
+        "Local Markets",
+        "Unique Goods & Souvenirs",
+        "Boutiques & Independent Shops",
+        "Shopping Malls & Department Stores",
+        "Luxury Shopping",
+        "Clothes Shopping"
+      ]
+    },
+    {
+      "theme": "Relaxation & Wellness",
+      "activities": [
+        "Spas & Wellness Centers",
+        "Onsens / Bathhouses",
+        "Pools",
+        "Yoga & Meditation Centers",
+        "Quiet Spots / Relaxation Zones"
+      ]
+    },
+    {
+      "theme": "Events & Festivals",
+      "activities": [
+        "Local Festivals & Celebrations",
+        "Concerts & Music Festivals",
+        "Sporting Events",
+        "Exhibitions & Conventions",
+        "Seasonal Events"
+      ]
+    },
+    {
+      "theme": "Family Fun",
+      "activities": [
+        "Playgrounds",
+        "Kid-Friendly Museums",
+        "Family-Oriented Attractions"
+      ]
+    },
+    {
+      "theme": "Practical & Other",
+      "activities": [
+        "Unique Accommodations",
+        "Photo Opportunities",
+        "Volunteer Opportunities",
+        "Co-working Spaces"
+      ]
+    }
   ]
 }
