@@ -7,7 +7,7 @@ export default function Home() {
   const router = useRouter();
 
   useEffect(() => {
-    router.push("/travel-preferences");
+    router.push("/locations-and-dates");
   }, [router]);
 
   return (

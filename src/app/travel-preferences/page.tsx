@@ -16,8 +16,10 @@ import { useToast } from "@/hooks/use-toast";
 
 // --- API/AI Calls & TYPES ---
 import {
-  generateTravelPlan,
+  generatePreliminaryTravelPlan,
+  generateTravelPlan, // Import both functions
   type GenerateTravelPlanInput,
+  type PreliminaryPlanOutput, // Import the new type
   type GenerateTravelPlanOutput,
 } from "@/ai/flows/generate-travel-itinerary";
 
@@ -71,6 +73,7 @@ type ValidationResult = string | null; // Error message or null if valid
 
 // --- Constants ---
 const SESSION_STORAGE_PLAN_KEY = "generatedPlan";
+const SESSION_STORAGE_PRELIMINARY_KEY = "preliminaryPlan"; // Added key
 const TOAST_DESTRUCTIVE_VARIANT = "destructive" as const;
 const TOAST_DEFAULT_VARIANT = "default" as const;
 const TOAST_DURATION_MS = 5000;
@@ -256,9 +259,19 @@ export default function TravelPreferences() {
 
     try {
       console.log("Generating plan with input:", JSON.stringify(inputData, null, 2));
-      const result: GenerateTravelPlanOutput = await generateTravelPlan(inputData);
-      const generatedPlan = result?.plan; // Optional chaining for safety
+      const result: PreliminaryPlanOutput = await generatePreliminaryTravelPlan(inputData); // Call preliminary flow
+      //const generatedPlan = result?.plan; // Optional chaining for safety
 
+      // Store the preliminary data in session storage
+      sessionStorage.setItem(SESSION_STORAGE_PRELIMINARY_KEY, JSON.stringify(result));
+      toast({
+        title: "Success!",
+        description: "Preliminary plan generated. Review and provide feedback!",
+        variant: TOAST_DEFAULT_VARIANT,
+      });
+      router.push(`/review-plan`); // Navigate to the review page
+
+      /*
       // Check if the result is a non-empty array
       if (Array.isArray(generatedPlan) && generatedPlan.length > 0) {
         sessionStorage.setItem(SESSION_STORAGE_PLAN_KEY, JSON.stringify(generatedPlan));
@@ -277,6 +290,7 @@ export default function TravelPreferences() {
           duration: TOAST_DURATION_MS,
         });
       }
+      */
     } catch (error) {
       console.error("Error generating travel plan:", error);
       const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred.";
@@ -606,7 +620,7 @@ export default function TravelPreferences() {
                     Generating Plan...
                   </>
                 ) : (
-                  'Generate My Travel Plan'
+                  'Generate Preliminary Plan' // Changed button text
                 )}
               </Button>
               {/* Display hint text if submission is disabled and not currently loading */}
