@@ -61,7 +61,7 @@ const TransportationSchema = z.object({
   url: z
     .string()
     .optional()
-    .describe('A URL for booking, schedules, or more information, if available. Should be a valid web address starting with http or https.');
+    .describe('A URL for booking, schedules, or more information, if available. Should be a valid web address starting with http or https.'),
 });
 
 /**
@@ -270,3 +270,4 @@ export async function generateTravelPlan(
       }
   }
 }
+

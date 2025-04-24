@@ -23,6 +23,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Toaster } from "@/components/ui/toaster";
 
+// --- AI Flow Imports ---
+import { generatePreliminaryTravelPlan } from "@/ai/flows/generate-travel-itinerary"; // Import the AI function
+
 // --- Types ---
 // Interface for the data loaded from the previous step
 interface ActivityPreferencesData {
@@ -35,8 +38,7 @@ interface ActivityPreferencesData {
   specificLocations: string[];
   otherLocationInput: string;
   desiredActivityCategories: string[];
-  desiredActivities: string[];
-  // TODO: Add actual suggestedActivities: ActivitySuggestion[] when AI provides them
+  desiredActivities: string[]; // This might be initial user input, not AI suggestions
 }
 
 // Interface for the final plan input (might need adjustment based on AI flow)
@@ -51,14 +53,15 @@ const TOAST_DESTRUCTIVE_VARIANT = "destructive" as const;
 const TOAST_DEFAULT_VARIANT = "default" as const;
 const TOAST_DURATION_MS = 5000;
 
+type ValidationResult = string | null;
 export default function SuggestedActivitiesPage() {
   // --- State ---
   const [activityPrefs, setActivityPrefs] = useState<ActivityPreferencesData | null>(null);
-  // State to hold the activities currently displayed (initially from prefs, later from AI)
+  // State to hold the activities currently displayed (initially from AI)
   const [displayedActivities, setDisplayedActivities] = useState<string[]>([]);
   // State to track which activities the user has checked
   const [selectedActivities, setSelectedActivities] = useState<string[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(true); // Set loading true initially
   const [isSuggestingMore, setIsSuggestingMore] = useState<boolean>(false);
   const [loadingError, setLoadingError] = useState<string | null>(null);
 
@@ -66,31 +69,69 @@ export default function SuggestedActivitiesPage() {
   const router = useRouter();
   const { toast } = useToast();
 
-  // --- Load Data on Mount ---
+  // --- Fetch Suggestions on Load ---
   useEffect(() => {
     const storedData = sessionStorage.getItem(SESSION_STORAGE_ACTIVITY_PREFS_KEY);
     if (storedData) {
       try {
         const parsedData: ActivityPreferencesData = JSON.parse(storedData);
         setActivityPrefs(parsedData);
-        // ** Placeholder: Use desiredActivities as initial suggestions **
-        // In the future, this should come from an AI call triggered on the previous page
-        // or potentially triggered here if not done before.
-        setDisplayedActivities(parsedData.desiredActivities || []);
-        // Initially, pre-select the activities the user already expressed interest in
-        setSelectedActivities(parsedData.desiredActivities || []);
-        console.log("Loaded Activity Preferences Data:", parsedData);
+
+        // --- Call AI to get initial suggestions ---
+        const fetchSuggestions = async (prefs: ActivityPreferencesData) => {
+          setIsLoading(true);
+          setLoadingError(null);
+          try {
+            const aiInput = {
+              destination: prefs.destination,
+              arrivalCity: prefs.arrivalCity,
+              departureCity: prefs.departureCity,
+              dates: prefs.arrivalDate && prefs.returnDate ? `${prefs.arrivalDate} to ${prefs.returnDate}` : 'Flexible dates', // Construct dates string
+              numberOfDays: prefs.numberOfDays,
+              specificLocations: prefs.specificLocations.join(', ') || prefs.otherLocationInput || undefined, // Combine specific locations and other input
+              desiredActivities: prefs.desiredActivityCategories.join(', ') + (prefs.desiredActivities.length > 0 ? ', ' + prefs.desiredActivities.join(', ') : ''), // Combine categories and specific desires
+              feedback: undefined, // No feedback on initial load
+            };
+
+            console.log("Calling generatePreliminaryTravelPlan with:", aiInput);
+            const result = await generatePreliminaryTravelPlan(aiInput);
+            console.log("Received AI suggestions:", result);
+
+            // Combine points of interest names/locations and activity strings
+            const combinedSuggestions = [
+              ...(result.pointsOfInterest || []).map(poi => `${poi.name} (${poi.location})`),
+              ...(result.activities || []),
+            ];
+
+            setDisplayedActivities(combinedSuggestions);
+            setSelectedActivities([]); // Start with no activities selected from the new suggestions
+
+          } catch (error) {
+            console.error("Error fetching AI suggestions:", error);
+            const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred while fetching suggestions.";
+            setLoadingError(errorMessage);
+            toast({ title: "Error", description: errorMessage, variant: TOAST_DESTRUCTIVE_VARIANT });
+          } finally {
+            setIsLoading(false);
+          }
+        };
+
+        fetchSuggestions(parsedData);
+
       } catch (error) {
         console.error("Failed to parse activity preferences data from sessionStorage:", error);
         setLoadingError("Could not load activity preferences. Please go back.");
         toast({ title: "Error", description: "Failed to load activity preferences.", variant: TOAST_DESTRUCTIVE_VARIANT });
+        setIsLoading(false); // Stop loading on parse error
       }
     } else {
       setLoadingError("No activity preference data found. Please start from the beginning.");
+      toast({ title: "Error", description: "No activity preference data found.", variant: TOAST_DESTRUCTIVE_VARIANT });
+      setIsLoading(false); // Stop loading if no data found
       // Optionally redirect
       // router.push('/locations-and-dates');
     }
-  }, [router, toast]);
+  }, [router, toast]); // Depend on router and toast
 
   // --- Validation Logic ---
   // Basic check: at least one activity must be selected to create an itinerary
@@ -154,17 +195,34 @@ export default function SuggestedActivitiesPage() {
         return;
     }
     setIsSuggestingMore(true);
+    setLoadingError(null);
     try {
-      // ** Placeholder for AI call to get more suggestions **
-      console.log("Requesting more suggestions based on:", activityPrefs, " keeping selections:", selectedActivities);
-      // Simulate AI response by adding dummy activities
-      await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate network delay
+      // --- Call AI to get more suggestions ---
+      // Pass selected activities as feedback for refinement
+      const aiInput = {
+        destination: activityPrefs.destination,
+        arrivalCity: activityPrefs.arrivalCity,
+        departureCity: activityPrefs.departureCity,
+        dates: activityPrefs.arrivalDate && activityPrefs.returnDate ? `${activityPrefs.arrivalDate} to ${activityPrefs.returnDate}` : 'Flexible dates', // Construct dates string
+        numberOfDays: activityPrefs.numberOfDays,
+        specificLocations: activityPrefs.specificLocations.join(', ') || activityPrefs.otherLocationInput || undefined, // Combine specific locations and other input
+        desiredActivities: activityPrefs.desiredActivityCategories.join(', ') + (activityPrefs.desiredActivities.length > 0 ? ', ' + activityPrefs.desiredActivities.join(', ') : ''), // Combine categories and specific desires
+        feedback: `Suggest more activities. The user has already selected these activities: ${selectedActivities.join(', ')}. Please provide new suggestions that complement these or explore related options based on their original preferences.`, // Provide feedback
+      };
+
+      console.log("Calling generatePreliminaryTravelPlan for more suggestions with:", aiInput);
+      const result = await generatePreliminaryTravelPlan(aiInput);
+      console.log("Received more AI suggestions:", result);
+
+       // Combine points of interest names/locations and activity strings from the new suggestions
       const newSuggestions = [
-        `New Suggestion 1 (${Date.now().toString().slice(-4)})`,
-        `New Suggestion 2 (${Date.now().toString().slice(-4)})`
+        ...(result.pointsOfInterest || []).map(poi => `${poi.name} (${poi.location})`),
+        ...(result.activities || []),
       ];
+
       // Combine existing displayed activities with new ones, avoiding duplicates
-      setDisplayedActivities(prev => Array.from(new Set([...prev, ...newSuggestions])));
+      // Ensure previously selected activities remain in the displayed list if they weren't already.
+      setDisplayedActivities(prev => Array.from(new Set([...prev, ...selectedActivities, ...newSuggestions])));
 
       toast({
         title: "More Suggestions Added",
@@ -174,7 +232,8 @@ export default function SuggestedActivitiesPage() {
 
     } catch (error) {
         console.error("Error getting more suggestions:", error);
-        const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred.";
+        const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred while getting more suggestions.";
+        setLoadingError(errorMessage);
         toast({ title: "Suggestion Error", description: errorMessage, variant: TOAST_DESTRUCTIVE_VARIANT });
     } finally {
         setIsSuggestingMore(false);
@@ -219,12 +278,18 @@ export default function SuggestedActivitiesPage() {
   }
 
   if (!activityPrefs) {
-    return (
-      <div className="container mx-auto p-4 md:p-8 max-w-3xl flex justify-center items-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <span className="ml-2">Loading preferences...</span>
-      </div>
-    );
+    // While activityPrefs are loading, show the initial loader.
+    // The fetchSuggestions async function takes over loading state once prefs are loaded.
+     if (isLoading) {
+      return (
+        <div className="container mx-auto p-4 md:p-8 max-w-3xl flex justify-center items-center min-h-screen-minus-header">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <span className="ml-2">Loading preferences and suggestions...</span>
+        </div>
+      );
+     }
+     // If no error and not loading, but no prefs, something is wrong.
+     return null; // Or a specific error state if needed
   }
 
   // --- Main JSX ---
@@ -241,10 +306,16 @@ export default function SuggestedActivitiesPage() {
           {/* Suggested Activities List */}
           <div className="space-y-3">
             <Label className="text-lg font-semibold">Suggested Activities & Points of Interest</Label>
-            {displayedActivities.length > 0 ? (
+            {isLoading && displayedActivities.length === 0 ? (
+               <div className="flex justify-center items-center p-8">
+                 <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                 <span className="ml-2">Fetching initial suggestions...</span>
+               </div>
+            ) : displayedActivities.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 p-2 border rounded-md">
                 {displayedActivities.map((activity) => {
-                  const activityId = `suggested-${activity.replace(/\s+/g, '-').toLowerCase()}`;
+                  // Simple hash or sanitized string for a key/id
+                  const activityId = `suggested-${activity.replace(/[^a-zA-Z0-9]/g, '').toLowerCase().substring(0, 20)}-${Math.random().toString(36).substring(2, 7)}`;
                   return (
                     <div key={activityId} className="flex items-center space-x-2">
                       <Checkbox
@@ -319,3 +390,4 @@ export default function SuggestedActivitiesPage() {
     </div>
   );
 }
+
