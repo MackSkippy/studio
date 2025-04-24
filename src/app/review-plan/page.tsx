@@ -23,11 +23,11 @@ import {
   generateTravelPlan,
   type GenerateTravelPlanInput,
   type GenerateTravelPlanOutput,
-  type PreliminaryPlanOutput,
 } from "@/ai/flows/generate-travel-itinerary"; // Import generateTravelPlan
 
 const SESSION_STORAGE_PRELIMINARY_KEY = "preliminaryPlan";
 const SESSION_STORAGE_PLAN_KEY = "generatedPlan"; // Constant for storing the final plan
+const SESSION_STORAGE_TRAVEL_PREFERENCES_KEY = "travelPreferences"; // Constant for storing travel preferences
 const TOAST_DESTRUCTIVE_VARIANT = "destructive" as const;
 const TOAST_DEFAULT_VARIANT = "default" as const;
 const TOAST_DURATION_MS = 5000;
@@ -44,6 +44,8 @@ const ReviewPlan: React.FC<ReviewPlanProps> = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [pointsOfInterest, setPointsOfInterest] = useState<PointOfInterest[]>([]);
   const [activities, setActivities] = useState<string[]>([]);
+  const [selectedPointsOfInterest, setSelectedPointsOfInterest] = useState<PointOfInterest[]>([]);
+  const [selectedActivities, setSelectedActivities] = useState<string[]>([]);
   const router = useRouter();
   const { toast } = useToast();
 
@@ -51,7 +53,7 @@ const ReviewPlan: React.FC<ReviewPlanProps> = () => {
     const storedPreliminaryPlan = sessionStorage.getItem(SESSION_STORAGE_PRELIMINARY_KEY);
     if (storedPreliminaryPlan) {
       try {
-        const parsedPlan: PreliminaryPlanOutput = JSON.parse(storedPreliminaryPlan);
+        const parsedPlan = JSON.parse(storedPreliminaryPlan);
         setPointsOfInterest(parsedPlan.pointsOfInterest || []);
         setActivities(parsedPlan.activities || []);
       } catch (error) {
@@ -78,17 +80,35 @@ const ReviewPlan: React.FC<ReviewPlanProps> = () => {
   const handleGenerateFinalItinerary = async () => {
     setIsLoading(true);
     try {
-      //TODO: Fetch input from session storage that was used to generate the preliminary plan
-      //It should be the same input the user entered on the travel-preferences page
-      //const inputData = sessionStorage.getItem('travelPreferencesInput');
-      //const input: GenerateTravelPlanInput = JSON.parse(inputData);
+      // Fetch input from session storage that was used to generate the preliminary plan
+      const inputData = sessionStorage.getItem(SESSION_STORAGE_TRAVEL_PREFERENCES_KEY);
 
-      //Call to generateTravelPlan API
-      //const finalItinerary: GenerateTravelPlanOutput = await generateTravelPlan(input);
-      //sessionStorage.setItem(SESSION_STORAGE_PLAN_KEY, JSON.stringify(finalItinerary));
+      if (!inputData) {
+          toast({
+              title: "Error",
+              description: "Travel preferences not found. Please fill out the form again.",
+              variant: TOAST_DESTRUCTIVE_VARIANT,
+              duration: TOAST_DURATION_MS,
+          });
+          router.push("/travel-preferences");
+          return;
+      }
 
-      //Basic navigation to the generated plan
-      //router.push('/planner');
+      const input: GenerateTravelPlanInput = JSON.parse(inputData);
+      // Update the input with selected points of interest and activities
+      const selectedPOI = selectedPointsOfInterest.map(poi => poi.name).join(', ');
+      const selectedActs = selectedActivities.join(', ');
+      const feedbackString = `Include these points of interest: ${selectedPOI}. Include these activities: ${selectedActs}.`;
+
+      const updatedInput: GenerateTravelPlanInput = {
+          ...input,
+          feedback: feedbackString, // Include the feedback about selected POIs and Activities
+      };
+
+      // Call to generateTravelPlan API
+      const finalItinerary: GenerateTravelPlanOutput = await generateTravelPlan(updatedInput);
+      sessionStorage.setItem(SESSION_STORAGE_PLAN_KEY, JSON.stringify(finalItinerary));
+
       toast({
         title: "Success!",
         description: "Final itinerary generated!",
@@ -112,17 +132,27 @@ const ReviewPlan: React.FC<ReviewPlanProps> = () => {
 
   const togglePointOfInterest = useCallback(
     (poi: PointOfInterest) => {
-      // TODO: Implement logic to track which POIs are selected.
-      // This could involve adding/removing them from a selectedPois state.
-      console.log(`Toggled Point of Interest: ${poi.name}`);
+      setSelectedPointsOfInterest(prev => {
+        const alreadySelected = prev.some(item => item.name === poi.name && item.location === poi.location);
+        if (alreadySelected) {
+          return prev.filter(item => !(item.name === poi.name && item.location === poi.location));
+        } else {
+          return [...prev, poi];
+        }
+      });
     },
     []
   );
 
   const toggleActivity = useCallback(
     (activity: string) => {
-      // TODO: Implement logic to track which activities are selected.
-      console.log(`Toggled Activity: ${activity}`);
+      setSelectedActivities(prev => {
+        if (prev.includes(activity)) {
+          return prev.filter(item => item !== activity);
+        } else {
+          return [...prev, activity];
+        }
+      });
     },
     []
   );
@@ -131,9 +161,9 @@ const ReviewPlan: React.FC<ReviewPlanProps> = () => {
     <div className="container mx-auto p-4 md:p-8 max-w-3xl">
       <Card>
         <CardHeader>
-          <CardTitle className="text-2xl font-bold">Review Your Preliminary Plan</CardTitle>
+          <CardTitle className="text-2xl font-bold">Review Suggested Itinerary Elements</CardTitle>
           <CardDescription>
-            Review the suggested points of interest and activities. Provide feedback and approve to generate the final itinerary.
+            Review the suggested points of interest and activities. Select the ones you like, and then generate the final itinerary.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -144,6 +174,7 @@ const ReviewPlan: React.FC<ReviewPlanProps> = () => {
               <div key={`${poi.name}-${poi.location}`} className="flex items-center space-x-2">
                 <Checkbox
                   id={`poi-${poi.name}-${poi.location}`}
+                  checked={selectedPointsOfInterest.some(item => item.name === poi.name && item.location === poi.location)}
                   onCheckedChange={() => togglePointOfInterest(poi)}
                 />
                 <Label htmlFor={`poi-${poi.name}-${poi.location}`} className="font-normal">
@@ -160,6 +191,7 @@ const ReviewPlan: React.FC<ReviewPlanProps> = () => {
               <div key={activity} className="flex items-center space-x-2">
                 <Checkbox
                   id={`activity-${activity}`}
+                  checked={selectedActivities.includes(activity)}
                   onCheckedChange={() => toggleActivity(activity)}
                 />
                 <Label htmlFor={`activity-${activity}`} className="font-normal">

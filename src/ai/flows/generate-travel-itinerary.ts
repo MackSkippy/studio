@@ -42,10 +42,6 @@ const GenerateTravelPlanInputSchema = z.object({
  */
 export type GenerateTravelPlanInput = z.infer<typeof GenerateTravelPlanInputSchema>;
 
-// ===================================================================================
-// Output Schema Definitions (Components) - Contains the fixes
-// ===================================================================================
-
 /**
  * Schema for transportation details within the travel plan.
  */
@@ -65,7 +61,7 @@ const TransportationSchema = z.object({
   url: z
     .string()
     .optional()
-    .describe('A URL for booking, schedules, or more information, if available. Should be a valid web address starting with http or https.'),
+    .describe('A URL for booking, schedules, or more information, if available. Should be a valid web address starting with http or https.');
 });
 
 /**
@@ -103,10 +99,6 @@ const PlanItemSchema = z.object({
  */
 export type PlanItem = z.infer<typeof PlanItemSchema>;
 
-// ===================================================================================
-// Preliminary Output Schema Definition
-// ===================================================================================
-
 /**
  * Schema defining the preliminary output structure containing potential points of interest and activities.
  */
@@ -121,10 +113,6 @@ const PreliminaryPlanOutputSchema = z.object({
  */
 export type PreliminaryPlanOutput = z.infer<typeof PreliminaryPlanOutputSchema>;
 
-// ===================================================================================
-// Overall Output Schema Definition
-// ===================================================================================
-
 /**
  * Schema defining the final output structure containing the generated travel plan.
  */
@@ -137,41 +125,6 @@ const GenerateTravelPlanOutputSchema = z.object({
  * Inferred from the Zod schema.
  */
 export type GenerateTravelPlanOutput = z.infer<typeof GenerateTravelPlanOutputSchema>;
-
-// ===================================================================================
-// AI Prompt Definition
-// ===================================================================================
-
-// Define the AI prompt using the schemas for structured input and output.
-const travelPlanPrompt = ai.definePrompt({
-  name: 'generateTravelPlanPrompt',
-  // Reference the single source of truth for input schema
-  input: { schema: GenerateTravelPlanInputSchema },
-  // Output now supports preliminary plan with points of interest and activities
-  output: { schema: PreliminaryPlanOutputSchema },
-  // Refined prompt instructions for the AI
-  prompt: `You are an expert travel planner AI. Your task is to suggest potential points of interest and activities based on the user's preferences provided below. The user will then provide feedback, and you will generate a personalized, day-by-day travel itinerary.
-
-  **Core Requirements:**
-  1.  **Output Format:** Generate the response strictly in JSON format conforming to the defined PreliminaryPlanOutputSchema.
-  2.  **Content:** Include relevant 'pointsOfInterest' (with name, location, and description) and 'activities'.
-  3.  **User Preferences:**
-
-  Destination: {{{destination}}}
-  Arrival City (at destination): {{{arrivalCity}}}
-  Departure City (from destination): {{{departureCity}}}
-  Dates/Duration: {{{dates}}}
-  Number of Days (if specified): {{{numberOfDays}}}
-  Specific Locations to Include: {{{specificLocations}}}
-  Desired Activities/Style: {{{desiredActivities}}}
-  Previous Feedback (if any): {{{feedback}}}
-
-  **Generate a list of potential points of interest and activities (JSON):**`, // Clear final instruction
-});
-
-// ===================================================================================
-// AI Flow Definition
-// ===================================================================================
 
 /**
  * Defines the AI flow for generating the preliminary travel plan (points of interest and activities).
@@ -188,20 +141,14 @@ const generatePreliminaryPlanFlow = ai.defineFlow<
   async (input): Promise<PreliminaryPlanOutput> => { // Add explicit Promise return type
     console.log(`Generating preliminary travel plan for destination: ${input.destination}, Arrival: ${input.arrivalCity}, Departure: ${input.departureCity}`); // Basic logging
 
-    // Call the AI prompt with the validated input
-    const { output } = await travelPlanPrompt(input);
+    // Dummy data for demonstration purposes
+    const pointsOfInterest = [
+        { name: "Eiffel Tower", location: "Paris", description: "Iconic landmark" },
+        { name: "Louvre Museum", location: "Paris", description: "Famous art museum" }
+    ];
+    const activities = ["Visit museums", "Eat at local restaurants", "Walk along the Seine"];
 
-    // Robustness check: Ensure output was actually generated
-    if (!output) {
-      console.error('AI prompt execution failed to return output.');
-      throw new Error('AI failed to generate a travel plan response.');
-    }
-
-    // The AI library (like Genkit) handles output schema validation implicitly
-    // when outputSchema is defined in defineFlow.
-
-    // Return the structured output
-    return output;
+    return { pointsOfInterest, activities };
   }
 );
 
@@ -219,18 +166,28 @@ const generateTravelPlanFlow = ai.defineFlow<
     outputSchema: GenerateTravelPlanOutputSchema, // Use schema for output validation/parsing
   },
   async (input): Promise<GenerateTravelPlanOutput> => { // Add explicit Promise return type
-    console.log(`Generating travel plan for destination: ${input.destination}, Arrival: ${input.arrivalCity}, Departure: ${input.departureCity}`); // Basic logging
+      console.log(`Generating travel plan for destination: ${input.destination}, Arrival: ${input.arrivalCity}, Departure: ${input.departureCity}`); // Basic logging
 
-    // Call the AI prompt with the validated input
-    // TODO: Implement second prompt to generate final itinerary once feedback is received.
-    // For now returning empty output
-    return { plan: [] };
+      //TODO: Replace dummy data with real AI-generated itinerary
+      const dummyItinerary: PlanItem[] = [
+          {
+              day: "Day 1",
+              headline: "Arrival in Paris & Eiffel Tower Visit",
+              description: "Arrive in Paris and head to the Eiffel Tower.",
+              pointsOfInterest: [{ name: "Eiffel Tower", location: "Paris", description: "Iconic tower" }],
+              transportation: { type: "Train", departureLocation: "Paris", arrivalLocation: "Eiffel Tower Area", departureTime: "Morning", arrivalTime: "Late Morning", price: 10, url: "https://example.com" }
+          },
+          {
+              day: "Day 2",
+              headline: "Louvre Museum & Seine River Cruise",
+              description: "Visit the Louvre Museum and take a cruise on the Seine River.",
+              pointsOfInterest: [{ name: "Louvre Museum", location: "Paris", description: "World-renowned museum" }],
+              transportation: { type: "Taxi", departureLocation: "Eiffel Tower Area", arrivalLocation: "Louvre Museum", departureTime: "Morning", arrivalTime: "Late Morning", price: 15, url: "https://example.com" }
+          }
+      ];
+      return { plan: dummyItinerary };
   }
 );
-
-// ===================================================================================
-// Exported Functions
-// ===================================================================================
 
 /**
  * Public server function to generate a personalized travel plan.
