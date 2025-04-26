@@ -1,7 +1,7 @@
 {
   "activityGroups": [
     {
-      "theme": "Eat & Drink",
+      "theme": "Food & Drink",
       "activities": [
         "Fine Dining",
         "Casual Eateries",
@@ -19,14 +19,14 @@
     {
       "theme": "Culture & History",
       "activities": [
-        "Museums (Art, History, Science, Quirky)",
+        "Museums",
         "Art Galleries",
         "Historical Landmarks",
         "Archaeological Sites",
         "Architectural Highlights",
         "Cultural Centers",
-        "Places of Worship (Churches, Temples, Mosques, etc.)",
-        "Libraries & Bookstores (Iconic/Unique)",
+        "Places of Worship",
+        "Libraries & Bookstores",
         "Local Neighborhoods Exploration"
       ]
     },

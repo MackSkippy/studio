@@ -9,3 +9,12 @@
 - Feedback Collection: Collect user feedback on each generated itinerary to improve the planning process.
 
 ## Style Guidelines:
+
+
+## File Purpose
+
+\public
+robots.txt -> handles webcrawlers helps visibility
+
+src\ai\flows
+generate-travel-itinerary.ts

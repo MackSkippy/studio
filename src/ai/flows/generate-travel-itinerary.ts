@@ -42,6 +42,10 @@ const GenerateTravelPlanInputSchema = z.object({
  */
 export type GenerateTravelPlanInput = z.infer<typeof GenerateTravelPlanInputSchema>;
 
+// ===================================================================================
+// Output Schemas Definition
+// ===================================================================================
+
 /**
  * Schema for transportation details within the travel plan.
  */
@@ -60,6 +64,7 @@ const TransportationSchema = z.object({
     .describe('Estimated price for this transportation segment (specify currency implicitly, e.g., based on destination). Omit if unknown or zero.'),
   url: z
     .string()
+    .url() // Ensures it's a valid URL format if provided
     .optional()
     .describe('A URL for booking, schedules, or more information, if available. Should be a valid web address starting with http or https.'),
 });
@@ -85,7 +90,7 @@ const PointOfInterestSchema = z.object({
 const PlanItemSchema = z.object({
   day: z.string().min(1).describe('Identifier for the day (e.g., "Day 1", "2024-07-10", "April 25th, 2025"). Must be present and unique within the plan.'),
   headline: z.string().min(1).describe('A short, descriptive headline summarizing the main theme or key activity of the day (e.g., "Arrival in Rome & Ancient Wonders Exploration").'),
-  description: z.string().min(1).describe('A more detailed narrative description of the day\'s planned activities, flow, and experiences.'),
+  description: z.string().min(1).describe("A more detailed narrative description of the day's planned activities, flow, and experiences."),
   pointsOfInterest: z
     .array(PointOfInterestSchema)
     .optional()
@@ -100,16 +105,38 @@ const PlanItemSchema = z.object({
 export type PlanItem = z.infer<typeof PlanItemSchema>;
 
 /**
- * Schema defining the preliminary output structure containing potential points of interest and activities.
+ * Schema for an individual activity suggestion within a type group.
  */
-const PreliminaryPlanOutputSchema = z.object({
-  pointsOfInterest: z.array(PointOfInterestSchema).describe('A list of potential points of interest for the trip.'),
-  activities: z.array(z.string()).describe('A list of potential activities for the trip.'),
+const ActivitySuggestionSchema = z.object({
+  name: z.string().min(1).describe('The name of the activity or point of interest.'),
+  description: z.string().min(1).describe('A brief description of the activity or point of interest.'),
 });
+
+/**
+ * Schema for a group of activities of the same type.
+ */
+const ActivityTypeGroupSchema = z.object({
+  type: z.string().min(1).describe('The category or type of activity (e.g., "Museums", "Outdoor Activities", "Restaurants").'),
+  suggestions: z.array(ActivitySuggestionSchema).min(3, { message: "Each activity type group must have at least 3 suggestions." }).describe('A list of specific activity suggestions within this category.'),
+});
+
+/**
+ * Schema for a group of activity suggestions within a specific location (city, region, etc.).
+ */
+const LocationGroupSchema = z.object({
+  location: z.string().min(1).describe('The specific city or area these suggestions are located in (e.g., "Paris", "Kyoto", "Near Central Park").'),
+  activityTypes: z.array(ActivityTypeGroupSchema).describe('A list of activity type groups within this location.'),
+});
+
+/**
+ * Schema defining the preliminary output structure containing potential points of interest and activities, grouped by location and type.
+ */
+const PreliminaryPlanOutputSchema = z.array(LocationGroupSchema).min(1, { message: "The preliminary plan must contain at least one location group." }).describe('A list of activity suggestions, grouped first by location, then by activity type.');
 
 /**
  * Type representing the preliminary output of the travel plan generation.
  * Inferred from the Zod schema.
+ * Export this type for frontend usage.
  */
 export type PreliminaryPlanOutput = z.infer<typeof PreliminaryPlanOutputSchema>;
 
@@ -126,6 +153,10 @@ const GenerateTravelPlanOutputSchema = z.object({
  */
 export type GenerateTravelPlanOutput = z.infer<typeof GenerateTravelPlanOutputSchema>;
 
+// ===================================================================================
+// AI Flow Definitions
+// ===================================================================================
+
 /**
  * Defines the AI flow for generating the preliminary travel plan (points of interest and activities).
  */
@@ -139,22 +170,101 @@ const generatePreliminaryPlanFlow = ai.defineFlow<
     outputSchema: PreliminaryPlanOutputSchema, // Use schema for output validation/parsing
   },
   async (input): Promise<PreliminaryPlanOutput> => { // Add explicit Promise return type
-    console.log(`Generating preliminary travel plan for destination: ${input.destination}, Arrival: ${input.arrivalCity}, Departure: ${input.departureCity}`); // Basic logging
+    console.log(
+      `Generating preliminary travel plan for destination: ${input.destination}, Arrival: ${input.arrivalCity}, Departure: ${input.departureCity}`
+    ); // Basic logging
 
-    // Dummy data for demonstration purposes
-    const pointsOfInterest = [
-        { name: "Eiffel Tower", location: "Paris", description: "Iconic landmark" },
-        { name: "Louvre Museum", location: "Paris", description: "Famous art museum" }
-    ];
-    const activities = ["Visit museums", "Eat at local restaurants", "Walk along the Seine"];
+    // Construct prompt for preliminary ideas
+    const prompt = `
+      Based on the following travel request:
+      Destination: ${input.destination}
+      Travel Dates: ${input.dates}
+      ${input.numberOfDays ? `Number of Days: ${input.numberOfDays}` : ''}
+      ${input.specificLocations ? `Specific Locations of Interest: ${input.specificLocations}` : ''}
+      Desired Activities/Style: ${input.desiredActivities}
+      ${input.feedback ? `Refinement Feedback: ${input.feedback}` : ''}
 
-    return { pointsOfInterest, activities };
+      Considering the destination, dates (including seasonality), specific locations, and desired activities,
+      please suggest potential activities and points of interest. The suggestions should be grouped first by location (city/area), then by activity type/category.
+
+      Provide at least 3 specific suggestions with descriptions for *each* activity type within *each* location provided or implied by the request.
+
+      The output MUST be a JSON array where each element strictly follows this structure:
+      [
+        {
+          "location": "string (e.g., 'Paris', 'Kyoto')",
+          "activityTypes": [
+            {
+              "type": "string (e.g., 'Museums', 'Outdoor Activities')",
+              "suggestions": [
+                { "name": "string", "description": "string (A brief description of the activity)" },
+                { "name": "string", "description": "string" },
+                { "name": "string", "description": "string" }
+                // ... potentially more suggestions
+              ]
+            }
+            // ... potentially more activity types for this location
+          ]
+        }
+        // ... potentially more locations
+      ]
+
+      Ensure the entire output is ONLY the valid JSON array requested, starting with [ and ending with ].
+      Consider the travel dates to suggest seasonal activities and attractions.
+    `;
+    const maxTokens = 2048; // Increased tokens for potentially more detailed output
+    const temperature = 0.8; // Allow a bit more creativity for suggestions
+
+    try {
+      const aiResponse = await ai.run({
+        prompt,
+        maxTokens,
+        temperature,
+        // Potentially add output format specifier if the AI library supports it (e.g., output: 'json')
+      });
+
+      // Parse the JSON output
+      try {
+        const responseText = aiResponse.text();
+        console.log("Raw AI response (preliminary):", responseText); // Log raw response for debugging
+
+        // Attempt to clean up potential extraneous text before parsing
+        const jsonRegex = new RegExp('```json([\s\S]*?)```');
+        const jsonMatch = responseText.match(jsonRegex);
+
+        const jsonString = jsonMatch ? jsonMatch[1] : responseText;
+
+        const parsedResponse = JSON.parse(jsonString);
+
+        // Validate the parsed response structure
+        const validation = PreliminaryPlanOutputSchema.safeParse(parsedResponse);
+        if (!validation.success) {
+            console.error("Failed to validate AI preliminary response structure:", validation.error.format());
+            const errorDetails = JSON.stringify(validation.error.format());
+            throw new Error(`AI preliminary response did not match the expected format. Issues: ${errorDetails}`);
+        }
+        return validation.data;
+
+      } catch (parseError) {
+        console.error("Error parsing AI preliminary response:", parseError);
+        console.error("Raw response that failed parsing:", aiResponse.text());
+        throw new Error("Failed to parse AI preliminary response. The format might be incorrect or contained extra text.");
+      }
+    } catch (aiError) {
+      console.error("Error calling AI model (preliminary):", aiError);
+      if (aiError instanceof Error) {
+        throw new Error(`Failed to generate preliminary plan: ${aiError.message}`);
+      } else {
+        throw new Error("Failed to generate preliminary plan. An unknown error occurred.");
+      }
+    }
   }
 );
 
 /**
- * Defines the AI flow for generating the travel plan.
- * It takes validated user input, calls the AI prompt, and returns the structured output.
+ * Defines the AI flow for generating the final, detailed travel plan.
+ * It takes validated user input, calls the AI prompt, and returns the
+ * structured output.
  */
 const generateTravelPlanFlow = ai.defineFlow<
   typeof GenerateTravelPlanInputSchema, // Explicit input type from schema
@@ -166,31 +276,106 @@ const generateTravelPlanFlow = ai.defineFlow<
     outputSchema: GenerateTravelPlanOutputSchema, // Use schema for output validation/parsing
   },
   async (input): Promise<GenerateTravelPlanOutput> => { // Add explicit Promise return type
-      console.log(`Generating travel plan for destination: ${input.destination}, Arrival: ${input.arrivalCity}, Departure: ${input.departureCity}`); // Basic logging
+      console.log(`Generating detailed travel plan for destination: ${input.destination}, Arrival: ${input.arrivalCity}, Departure: ${input.departureCity}`); // Basic logging
 
-      //TODO: Replace dummy data with real AI-generated itinerary
-      const dummyItinerary: PlanItem[] = [
-          {
-              day: "Day 1",
-              headline: "Arrival in Paris & Eiffel Tower Visit",
-              description: "Arrive in Paris and head to the Eiffel Tower.",
-              pointsOfInterest: [{ name: "Eiffel Tower", location: "Paris", description: "Iconic tower" }],
-              transportation: { type: "Train", departureLocation: "Paris", arrivalLocation: "Eiffel Tower Area", departureTime: "Morning", arrivalTime: "Late Morning", price: 10, url: "https://example.com" }
-          },
-          {
-              day: "Day 2",
-              headline: "Louvre Museum & Seine River Cruise",
-              description: "Visit the Louvre Museum and take a cruise on the Seine River.",
-              pointsOfInterest: [{ name: "Louvre Museum", location: "Paris", description: "World-renowned museum" }],
-              transportation: { type: "Taxi", departureLocation: "Eiffel Tower Area", arrivalLocation: "Louvre Museum", departureTime: "Morning", arrivalTime: "Late Morning", price: 15, url: "https://example.com" }
+      const prompt = `
+        Create a detailed, day-by-day travel itinerary based on the following user preferences:
+
+        Destination: ${input.destination}
+        Arrival City: ${input.arrivalCity}
+        Departure City: ${input.departureCity}
+        Travel Dates: ${input.dates}
+        ${input.numberOfDays ? `Number of Days: ${input.numberOfDays}` : ''}
+        ${input.specificLocations ? `Specific Locations to Include/Focus On: ${input.specificLocations}` : ''}
+        Desired Activities/Interests/Style: ${input.desiredActivities}
+        ${input.feedback ? `Refinement Feedback on Previous Plan: ${input.feedback}` : ''}
+
+        Please generate the itinerary as a JSON object containing a single key "plan", which is an array of objects.
+        Each object in the "plan" array represents a single day and MUST strictly follow this structure:
+        {
+          "day": "string (e.g., 'Day 1', '2025-07-10')",
+          "headline": "string (Short summary of the day)",
+          "description": "string (Detailed narrative of the day's activities)",
+          "pointsOfInterest": [ (optional array)
+            { "name": "string", "location": "string", "description": "string (optional)" }
+          ],
+          "transportation": { (optional object for inter-city or significant travel on this day)
+            "type": "string (e.g., 'Train', 'Rental Car')",
+            "departureLocation": "string",
+            "arrivalLocation": "string",
+            "departureStation": "string (optional)",
+            "arrivalStation": "string (optional)",
+            "departureTime": "string (e.g., '09:00', 'Morning')",
+            "arrivalTime": "string (e.g., '17:30', 'Afternoon')",
+            "price": number (optional),
+            "url": "string (optional, valid URL)"
           }
-      ];
-      return { plan: dummyItinerary };
+        }
+
+        Ensure the entire output is ONLY the valid JSON object requested, starting with { and ending with }. Do not include any introductory text or explanations outside the JSON structure.
+        The number of items in the 'plan' array should correspond to the duration implied by the dates or numberOfDays.
+        Make the plan logical, considering travel times between locations if necessary. Be creative yet practical based on the user's interests.
+      `;
+
+      // Adjust maxTokens and temperature as needed for detailed plan generation
+      const maxTokens = 3072; // Increased tokens for potentially longer, detailed plans
+      const temperature = 0.7; // Balance creativity and coherence
+
+      try {
+        const aiResponse = await ai.run({
+          prompt,
+          maxTokens,
+          temperature,
+          // Potentially add output format specifier if the AI library supports it (e.g., output: 'json')
+        });
+
+        // Parse the JSON output from the AI
+        try {
+          const responseText = aiResponse.text();
+          console.log("Raw AI response (detailed plan):", responseText); // Log raw response for debugging
+
+          // Attempt to clean up potential extraneous text before parsing
+          const jsonRegex = new RegExp('```json([\s\S]*?)```');
+          const jsonMatch = responseText.match(jsonRegex);
+
+          const jsonString = jsonMatch ? jsonMatch[1] : responseText;
+
+          const parsedResponse = JSON.parse(jsonString);
+
+          // Optional: Validate the parsed response structure again before returning
+          // The ai.defineFlow's outputSchema *should* handle this, but explicit validation adds robustness.
+          const validation = GenerateTravelPlanOutputSchema.safeParse(parsedResponse);
+           if (!validation.success) {
+              console.error("Failed to validate AI detailed plan response structure:", validation.error.format());
+              // Attempt to give more context about the error
+              const errorDetails = JSON.stringify(validation.error.format());
+              throw new Error(`AI response for the detailed plan did not match the expected format. Issues: ${errorDetails}`);
+           }
+          return validation.data; // Return the validated data
+
+        } catch (parseError) {
+          console.error("Error parsing AI detailed plan response:", parseError);
+          console.error("Raw response that failed parsing:", aiResponse.text()); // Log the problematic response
+          throw new Error("Failed to parse the detailed travel plan from AI response. The format might be incorrect.");
+        }
+      } catch (aiError) {
+        console.error("Error calling AI model (detailed plan):", aiError);
+        if (aiError instanceof Error) {
+          throw new Error(`AI failed to generate the detailed travel plan: ${aiError.message}`);
+        } else {
+          throw new Error("Failed to generate detailed plan. An unknown AI error occurred.");
+        }
+      }
   }
 );
 
+
+// ===================================================================================
+// Exported Server Functions (Public API)
+// ===================================================================================
+
 /**
- * Public server function to generate a personalized travel plan.
+ * Public server function to generate a preliminary list of POIs and activities, grouped by location and type.
  * Assumes input roughly conforms to the schema (frontend should validate thoroughly).
  * Executes the AI flow.
  */
@@ -201,11 +386,9 @@ export async function generatePreliminaryTravelPlan(
   // Backend safeParse acts as a safety net.
   const validationResult = GenerateTravelPlanInputSchema.safeParse(rawInput);
   if (!validationResult.success) {
-    console.error('Backend validation failed for input:', validationResult.error.format());
+    console.error('Backend validation failed for preliminary input:', validationResult.error.format());
     // Provide a clear error message back to the frontend caller.
-    throw new Error(`Invalid input received by the server. Please check your entries.`);
-     // Or re-throw specific formatted error if needed for detailed debugging:
-     // throw new Error(`Invalid input: ${JSON.stringify(validationResult.error.format())}`);
+    throw new Error(`Invalid input received by the server. Please check your entries: ${JSON.stringify(validationResult.error.format())}`);
   }
 
   // Call the AI flow with the validated data
@@ -214,24 +397,24 @@ export async function generatePreliminaryTravelPlan(
       console.log("Calling generatePreliminaryPlanFlow with validated data:", validationResult.data);
       const result = await generatePreliminaryPlanFlow(validationResult.data);
       // Log the successful result before returning
-      console.log("generatePreliminaryPlanFlow returned successfully:", result);
+      console.log("generatePreliminaryPlanFlow returned successfully."); // Avoid logging potentially large result objects here
       return result;
   } catch (error) {
       console.error("Error executing generatePreliminaryPlanFlow:", error);
-      // Re-throw the error to be caught by the calling function (in page.tsx)
-      // This allows the frontend to display the specific error message from the API if available.
+      // Re-throw the error to be caught by the calling function (in frontend)
+      // This allows the frontend to display a specific error message if available.
       if (error instanceof Error) {
         // Add more details to the error message if possible
-        throw new Error(`Error generating travel plan: ${error.message}`);
+        throw new Error(`Error generating preliminary plan: ${error.message}`);
       } else {
         // Wrap unknown errors
-        throw new Error("An unexpected error occurred during travel plan generation.");
+        throw new Error("An unexpected error occurred during preliminary plan generation.");
       }
   }
 }
 
 /**
- * Public server function to generate a personalized travel plan.
+ * Public server function to generate the final personalized travel plan.
  * Assumes input roughly conforms to the schema (frontend should validate thoroughly).
  * Executes the AI flow.
  */
@@ -242,11 +425,9 @@ export async function generateTravelPlan(
   // Backend safeParse acts as a safety net.
   const validationResult = GenerateTravelPlanInputSchema.safeParse(rawInput);
   if (!validationResult.success) {
-    console.error('Backend validation failed for input:', validationResult.error.format());
+    console.error('Backend validation failed for final plan input:', validationResult.error.format());
     // Provide a clear error message back to the frontend caller.
-    throw new Error(`Invalid input received by the server. Please check your entries.`);
-     // Or re-throw specific formatted error if needed for detailed debugging:
-     // throw new Error(`Invalid input: ${JSON.stringify(validationResult.error.format())}`);
+    throw new Error(`Invalid input received by the server. Please check your entries: ${JSON.stringify(validationResult.error.format())}`);
   }
 
   // Call the AI flow with the validated data
@@ -255,19 +436,18 @@ export async function generateTravelPlan(
       console.log("Calling generateTravelPlanFlow with validated data:", validationResult.data);
       const result = await generateTravelPlanFlow(validationResult.data);
       // Log the successful result before returning
-      console.log("generateTravelPlanFlow returned successfully:", result);
+      console.log("generateTravelPlanFlow returned successfully."); // Avoid logging potentially large result objects
       return result;
   } catch (error) {
       console.error("Error executing generateTravelPlanFlow:", error);
-      // Re-throw the error to be caught by the calling function (in page.tsx)
-      // This allows the frontend to display the specific error message from the API if available.
+      // Re-throw the error to be caught by the calling function (in frontend)
+      // This allows the frontend to display the specific error message from the AI/parsing if available.
       if (error instanceof Error) {
         // Add more details to the error message if possible
-        throw new Error(`Error generating travel plan: ${error.message}`);
+        throw new Error(`Error generating final travel plan: ${error.message}`);
       } else {
         // Wrap unknown errors
-        throw new Error("An unexpected error occurred during travel plan generation.");
+        throw new Error("An unexpected error occurred during final travel plan generation.");
       }
   }
 }
-

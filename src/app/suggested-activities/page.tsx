@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 
 // --- Third-Party Libraries ---
 import { Loader2 } from "lucide-react";
+import { v4 as uuidv4 } from 'uuid'; // Import uuid for unique keys
 
 // --- Hooks ---
 import { useToast } from "@/hooks/use-toast";
@@ -22,9 +23,10 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Toaster } from "@/components/ui/toaster";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 // --- AI Flow Imports ---
-import { generatePreliminaryTravelPlan } from "@/ai/flows/generate-travel-itinerary"; // Import the AI function
+import { generatePreliminaryTravelPlan, PreliminaryPlanOutput } from "@/ai/flows/generate-travel-itinerary"; // Import the AI function and the new type
 
 // --- Types ---
 // Interface for the data loaded from the previous step
@@ -43,7 +45,15 @@ interface ActivityPreferencesData {
 
 // Interface for the final plan input (might need adjustment based on AI flow)
 interface FinalPlanInput extends ActivityPreferencesData {
-    selectedFinalActivities: string[];
+    selectedFinalActivities: string[]; // Flattened list for now, matching AI input schema
+}
+
+// Type for selected activities in the new structure
+interface SelectedActivity {
+  location: string;
+  type: string;
+  name: string;
+  description: string;
 }
 
 // --- Constants ---
@@ -54,16 +64,19 @@ const TOAST_DEFAULT_VARIANT = "default" as const;
 const TOAST_DURATION_MS = 5000;
 
 type ValidationResult = string | null;
+
 export default function SuggestedActivitiesPage() {
   // --- State ---
   const [activityPrefs, setActivityPrefs] = useState<ActivityPreferencesData | null>(null);
-  // State to hold the activities currently displayed (initially from AI)
-  const [displayedActivities, setDisplayedActivities] = useState<string[]>([]);
-  // State to track which activities the user has checked
-  const [selectedActivities, setSelectedActivities] = useState<string[]>([]);
+  // State to hold the activities currently displayed (initially from AI) - now nested structure
+  const [displayedActivities, setDisplayedActivities] = useState<PreliminaryPlanOutput | null>(null);
+  // State to track which activities the user has checked - now stores structured info
+  const [selectedActivities, setSelectedActivities] = useState<SelectedActivity[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true); // Set loading true initially
   const [isSuggestingMore, setIsSuggestingMore] = useState<boolean>(false);
   const [loadingError, setLoadingError] = useState<string | null>(null);
+  // State to manage which accordions are open
+  const [openAccordionItems, setOpenAccordionItems] = useState<string[]>([]);
 
   // --- Hooks ---
   const router = useRouter();
@@ -95,16 +108,20 @@ export default function SuggestedActivitiesPage() {
 
             console.log("Calling generatePreliminaryTravelPlan with:", aiInput);
             const result = await generatePreliminaryTravelPlan(aiInput);
-            console.log("Received AI suggestions:", result);
+            console.log("Received AI suggestions:", JSON.stringify(result, null, 2)); // Log the structured result
 
-            // Combine points of interest names/locations and activity strings
-            const combinedSuggestions = [
-              ...(result.pointsOfInterest || []).map(poi => `${poi.name} (${poi.location})`),
-              ...(result.activities || []),
-            ];
-
-            setDisplayedActivities(combinedSuggestions);
+            setDisplayedActivities(result);
             setSelectedActivities([]); // Start with no activities selected from the new suggestions
+            // Open the first location and its first activity type accordion by default
+            if (result && result.length > 0) {
+              const firstLocationId = `location-${result[0].location.replace(/\s+/g, '-').toLowerCase()}`;
+               if (result[0].activityTypes.length > 0) {
+                 const firstActivityTypeId = `activity-type-${result[0].activityTypes[0].type.replace(/\s+/g, '-').toLowerCase()}`;
+                 setOpenAccordionItems([firstLocationId, firstActivityTypeId]);
+               } else {
+                 setOpenAccordionItems([firstLocationId]);
+               }
+            }
 
           } catch (error) {
             console.error("Error fetching AI suggestions:", error);
@@ -157,10 +174,18 @@ export default function SuggestedActivitiesPage() {
 
     setIsLoading(true);
     try {
+        // Flatten selected activities into a string list for the final plan input
+        const selectedActivityNamesAndLocations = selectedActivities.map(activity => `${activity.name} (${activity.location})`).join(', ');
+
         // Prepare the final data package for the planner page (and potentially final AI call)
         const finalInput: FinalPlanInput = {
             ...activityPrefs,
-            selectedFinalActivities: selectedActivities,
+            selectedFinalActivities: [selectedActivityNamesAndLocations], // Pass as an array containing the combined string
+             // Note: The generateTravelPlan flow expects desiredActivities as a string.
+             // We might need to adjust either this or the final AI flow's input schema
+             // if we want to pass the structured list of selected activities.
+             // For now, sending a flattened list of names as it fits the existing schema better.
+             desiredActivities: activityPrefs.desiredActivityCategories.join(', ') + (selectedActivityNamesAndLocations.length > 0 ? ', ' + selectedActivityNamesAndLocations : ''),
         };
 
         // Store the final input data
@@ -199,6 +224,8 @@ export default function SuggestedActivitiesPage() {
     try {
       // --- Call AI to get more suggestions ---
       // Pass selected activities as feedback for refinement
+      const selectedActivityNames = selectedActivities.map(activity => activity.name).join(', ');
+
       const aiInput = {
         destination: activityPrefs.destination,
         arrivalCity: activityPrefs.arrivalCity,
@@ -207,22 +234,51 @@ export default function SuggestedActivitiesPage() {
         numberOfDays: activityPrefs.numberOfDays,
         specificLocations: activityPrefs.specificLocations.join(', ') || activityPrefs.otherLocationInput || undefined, // Combine specific locations and other input
         desiredActivities: activityPrefs.desiredActivityCategories.join(', ') + (activityPrefs.desiredActivities.length > 0 ? ', ' + activityPrefs.desiredActivities.join(', ') : ''), // Combine categories and specific desires
-        feedback: `Suggest more activities. The user has already selected these activities: ${selectedActivities.join(', ')}. Please provide new suggestions that complement these or explore related options based on their original preferences.`, // Provide feedback
+        feedback: selectedActivityNames.length > 0 ? `Suggest more activities. The user has already selected these: ${selectedActivityNames}. Please provide new suggestions that complement these or explore related options based on their original preferences.` : 'Suggest more activities based on the original preferences.',
       };
 
       console.log("Calling generatePreliminaryTravelPlan for more suggestions with:", aiInput);
       const result = await generatePreliminaryTravelPlan(aiInput);
-      console.log("Received more AI suggestions:", result);
+      console.log("Received more AI suggestions:", JSON.stringify(result, null, 2));
 
-       // Combine points of interest names/locations and activity strings from the new suggestions
-      const newSuggestions = [
-        ...(result.pointsOfInterest || []).map(poi => `${poi.name} (${poi.location})`),
-        ...(result.activities || []),
-      ];
+      // Merge new suggestions with existing ones
+      setDisplayedActivities(prev => {
+        if (!prev) return result; // If no previous data, just set the new result
 
-      // Combine existing displayed activities with new ones, avoiding duplicates
-      // Ensure previously selected activities remain in the displayed list if they weren't already.
-      setDisplayedActivities(prev => Array.from(new Set([...prev, ...selectedActivities, ...newSuggestions])));
+        const updatedActivities = [...prev];
+
+        result.forEach(newLocationGroup => {
+          const existingLocationIndex = updatedActivities.findIndex(loc => loc.location === newLocationGroup.location);
+
+          if (existingLocationIndex > -1) {
+            // Location exists, merge activity types
+            newLocationGroup.activityTypes.forEach(newActivityTypeGroup => {
+              const existingActivityTypeIndex = updatedActivities[existingLocationIndex].activityTypes.findIndex(type => type.type === newActivityTypeGroup.type);
+
+              if (existingActivityTypeIndex > -1) {
+                // Activity type exists, merge suggestions
+                const existingSuggestions = updatedActivities[existingLocationIndex].activityTypes[existingActivityTypeIndex].suggestions;
+                const newSuggestions = newActivityTypeGroup.suggestions;
+                // Combine and remove duplicates based on name and description
+                const mergedSuggestions = Array.from(new Map([
+                    ...existingSuggestions.map(item => [item.name + item.description, item]),
+                    ...newSuggestions.map(item => [item.name + item.description, item]),
+                ]).values());
+
+                updatedActivities[existingLocationIndex].activityTypes[existingActivityTypeIndex].suggestions = mergedSuggestions;
+              } else {
+                // New activity type for existing location
+                updatedActivities[existingLocationIndex].activityTypes.push(newActivityTypeGroup);
+              }
+            });
+          } else {
+            // New location
+            updatedActivities.push(newLocationGroup);
+          }
+        });
+
+        return updatedActivities;
+      });
 
       toast({
         title: "More Suggestions Added",
@@ -241,12 +297,17 @@ export default function SuggestedActivitiesPage() {
   };
 
   // Handler for checkbox changes
-  const handleActivitySelectionChange = (activity: string, isChecked: boolean) => {
+  const handleActivitySelectionChange = (activity: SelectedActivity, isChecked: boolean) => {
     setSelectedActivities(prev => {
       if (isChecked) {
-        return Array.from(new Set([...prev, activity])); // Add, ensuring uniqueness
+        // Add, ensuring uniqueness based on location, type, and name
+        if (!prev.some(item => item.location === activity.location && item.type === activity.type && item.name === activity.name)) {
+             return [...prev, activity];
+        }
+        return prev; // Already exists, return previous state
       } else {
-        return prev.filter(item => item !== activity); // Remove
+        // Remove
+        return prev.filter(item => !(item.location === activity.location && item.type === activity.type && item.name === activity.name));
       }
     });
   };
@@ -260,6 +321,11 @@ export default function SuggestedActivitiesPage() {
       if (isLoading || isSuggestingMore) return null;
       return validateSelection();
   }, [isLoading, isSuggestingMore, selectedActivities]);
+
+   // Handler for accordion state change
+   const handleAccordionChange = (value: string | string[]) => {
+     setOpenAccordionItems(Array.isArray(value) ? value : [value]);
+   };
 
   // --- Render Logic ---
   if (loadingError) {
@@ -277,18 +343,17 @@ export default function SuggestedActivitiesPage() {
     );
   }
 
+  if (isLoading && !displayedActivities) {
+     return (
+       <div className="container mx-auto p-4 md:p-8 max-w-3xl flex justify-center items-center min-h-screen-minus-header">
+         <Loader2 className="h-8 w-8 animate-spin text-primary" />
+         <span className="ml-2">Loading preferences and suggestions...</span>
+       </div>
+     );
+  }
+
   if (!activityPrefs) {
-    // While activityPrefs are loading, show the initial loader.
-    // The fetchSuggestions async function takes over loading state once prefs are loaded.
-     if (isLoading) {
-      return (
-        <div className="container mx-auto p-4 md:p-8 max-w-3xl flex justify-center items-center min-h-screen-minus-header">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <span className="ml-2">Loading preferences and suggestions...</span>
-        </div>
-      );
-     }
-     // If no error and not loading, but no prefs, something is wrong.
+      // This case should ideally be caught by loadingError, but as a fallback:
      return null; // Or a specific error state if needed
   }
 
@@ -306,33 +371,55 @@ export default function SuggestedActivitiesPage() {
           {/* Suggested Activities List */}
           <div className="space-y-3">
             <Label className="text-lg font-semibold">Suggested Activities & Points of Interest</Label>
-            {isLoading && displayedActivities.length === 0 ? (
-               <div className="flex justify-center items-center p-8">
-                 <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                 <span className="ml-2">Fetching initial suggestions...</span>
-               </div>
-            ) : displayedActivities.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 p-2 border rounded-md">
-                {displayedActivities.map((activity) => {
-                  // Simple hash or sanitized string for a key/id
-                  const activityId = `suggested-${activity.replace(/[^a-zA-Z0-9]/g, '').toLowerCase().substring(0, 20)}-${Math.random().toString(36).substring(2, 7)}`;
-                  return (
-                    <div key={activityId} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={activityId}
-                        checked={selectedActivities.includes(activity)}
-                        onCheckedChange={(checked) => handleActivitySelectionChange(activity, !!checked)}
-                        aria-labelledby={`${activityId}-label`}
-                      />
-                      <Label htmlFor={activityId} id={`${activityId}-label`} className="font-normal cursor-pointer">
-                        {activity}
-                        {/* TODO: Add description here when AI provides it */}
-                      </Label>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
+            {displayedActivities && displayedActivities.length > 0 ? (
+              <Accordion type="multiple" value={openAccordionItems} onValueChange={handleAccordionChange} className="w-full">
+                {displayedActivities.map((locationGroup) => (
+                  <AccordionItem key={locationGroup.location} value={`location-${locationGroup.location.replace(/\s+/g, '-').toLowerCase()}`}>
+                    <AccordionTrigger className="text-base font-semibold">{locationGroup.location}</AccordionTrigger>
+                    <AccordionContent className="space-y-4 pl-4">
+                      {locationGroup.activityTypes.map((activityTypeGroup) => (
+                        <Accordion type="multiple" key={`${locationGroup.location}-${activityTypeGroup.type}`} value={openAccordionItems} onValueChange={handleAccordionChange} className="w-full border-l pl-4">
+                           <AccordionItem value={`activity-type-${activityTypeGroup.type.replace(/\s+/g, '-').toLowerCase()}`}>
+                             <AccordionTrigger className="text-sm font-medium italic">{activityTypeGroup.type}</AccordionTrigger>
+                             <AccordionContent className="space-y-2 pl-4">
+                               {activityTypeGroup.suggestions.map((suggestion) => {
+                                 // Create a unique key/id for each suggestion
+                                 const activityUniqueKey = `${locationGroup.location}-${activityTypeGroup.type}-${suggestion.name}`;
+                                 const activityId = `activity-${uuidv4()}`;
+                                 const isSelected = selectedActivities.some(item =>
+                                     item.location === locationGroup.location &&
+                                     item.type === activityTypeGroup.type &&
+                                     item.name === suggestion.name
+                                 );
+                                 const activityObject = { ...suggestion, location: locationGroup.location, type: activityTypeGroup.type };
+
+                                 return (
+                                   <div key={activityUniqueKey} className="flex items-start space-x-2">
+                                     <Checkbox
+                                       id={activityId}
+                                       checked={isSelected}
+                                       onCheckedChange={(checked) => handleActivitySelectionChange(activityObject, !!checked)}
+                                       aria-labelledby={`${activityId}-label`}
+                                       className="mt-1"
+                                     />
+                                     <div className="grid gap-1.5 leading-none">
+                                         <Label htmlFor={activityId} id={`${activityId}-label`} className="font-normal cursor-pointer">
+                                             {suggestion.name}
+                                         </Label>
+                                         <p className="text-xs text-muted-foreground">{suggestion.description}</p>
+                                     </div>
+                                   </div>
+                                 );
+                               })}
+                             </AccordionContent>
+                           </AccordionItem>
+                        </Accordion>
+                      ))}
+                    </AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
+            ) : ( !isLoading &&
               <p className="text-muted-foreground italic">
                 {isSuggestingMore ? "Loading suggestions..." : "No suggestions available based on your preferences."}
               </p>

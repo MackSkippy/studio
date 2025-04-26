@@ -2,13 +2,14 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button"; // Import the Button component
 
 export default function Home() {
   const router = useRouter();
 
-  useEffect(() => {
-    router.push("/locations-and-dates");
-  }, [router]);
+  // useEffect(() => {
+  //   router.push("/locations-and-dates");
+  // }, [router]);
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen py-2">
@@ -19,6 +20,11 @@ export default function Home() {
       <p className="mt-1 text-base text-muted-foreground text-center">
         Your AI friend who's been there and done that
       </p>
+      {/* Add the button here */}
+      <Button onClick={() => router.push("/locations-and-dates")} className="mt-6">
+        Let's plan an adventure!
+      </Button>
     </div>
   );
 }
+
