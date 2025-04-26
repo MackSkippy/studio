@@ -4,8 +4,8 @@
  * @fileOverview Recommends specific places (shops, sites, businesses) based on destination and activity preferences.
  *
  * - recommendPlaces - A function that handles the recommendation process.
- * - RecommendPlacesInput - The input type for the recommendPlaces function.
- * - RecommendPlacesOutput - The return type for the recommendPlaces function.
+ * - RecommendPlacesInput - The input type for the RecommendPlaces function.
+ * - RecommendPlacesOutput - The return type for the RecommendPlaces function.
  */
 
 import {ai} from '@/ai/ai-instance';
@@ -67,7 +67,12 @@ const recommendPlacesFlow = ai.defineFlow<
   outputSchema: RecommendPlacesOutputSchema,
 },
 async input => {
-  const {output} = await recommendPlacesPrompt(input);
-  return output!;
+  try {
+    const {output} = await recommendPlacesPrompt(input);
+    return output!;
+  } catch (error: any) {
+    console.error("Error calling recommendPlacesPrompt:", error);
+    throw new Error(`Failed to get recommendations from AI: ${error.message}`);
+  }
 }
 );
