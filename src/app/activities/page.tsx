@@ -229,8 +229,11 @@ export default function ActivitiesPage() {
     // Render a loading state while data is being loaded
     return (
       <div className="container mx-auto p-4 md:p-8 max-w-3xl flex justify-center items-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <span className="ml-2">Loading previous data...</span>
+        {isLoading ? (
+            <LoaderComponent />
+        ) : (
+            <p>Loading...</p>
+        )}
       </div>
     );
   }
@@ -309,4 +312,14 @@ export default function ActivitiesPage() {
       <Toaster />
     </div>
   );
+}
+
+// Separate component to ensure it's only used client-side
+function LoaderComponent() {
+    return (
+        <>
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <span className="ml-2">Loading previous data...</span>
+        </>
+    );
 }
