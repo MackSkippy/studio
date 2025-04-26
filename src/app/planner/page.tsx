@@ -13,37 +13,11 @@ import {
 } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Loader2 } from "lucide-react";
+import { ItineraryItem, PointOfInterest, Transportation } from "@/types/types";
+import {DragDropContext, Droppable, Draggable} from 'react-beautiful-dnd';
 
 // --- Constants ---
 const SESSION_STORAGE_KEY = "generatedPlan";
-
-// --- Types ---
-// (Keep existing PointOfInterest, Transportation, ItineraryItem interfaces)
-interface PointOfInterest {
-  name: string;
-  location: string;
-  // Add other relevant fields if available, e.g., description, openingHours
-}
-
-interface Transportation {
-  type: string;
-  departureLocation: string;
-  arrivalLocation: string;
-  departureStation?: string;
-  arrivalStation?: string;
-  departureTime: string;
-  arrivalTime: string;
-  // Add other relevant fields, e.g., bookingReference, cost
-}
-
-interface ItineraryItem {
-  id?: string; // Add optional stable ID if possible from the source
-  day: string; // Or number
-  headline: string;
-  description: string;
-  pointsOfInterest?: PointOfInterest[];
-  transportation?: Transportation;
-}
 
 // --- Helper Functions ---
 const generateMapLink = (query: string): string => {
@@ -80,7 +54,7 @@ const ItineraryItemView: React.FC<ItineraryItemViewProps> = ({ item, index }) =>
             {item.pointsOfInterest.map((poi, poiIndex) => (
               // Use poi.name or a unique ID if available as key for better stability
               // Include index in the key to ensure uniqueness if poi names repeat across days
-              <li key={`${item.id || `day-${index}`}-poi-${poi.name}-${poiIndex}`} className="text-sm text-muted-foreground">
+              <li key={`${item.name}-${poiIndex}`} className="text-sm text-muted-foreground">
                 {poi.location ? (
                   <a
                     href={generateMapLink(`${poi.name}, ${poi.location}`)}
@@ -180,14 +154,49 @@ const ItineraryDisplay: React.FC<ItineraryDisplayProps> = ({ itinerary, isLoadin
   if (itinerary.length === 0) {
     return <p className="text-gray-600">Your itinerary is currently empty.</p>;
   }
+  const onDragEnd = (result: any) => {
+        if (!result.destination) {
+          return;
+        }
+
+        const items = Array.from(itinerary);
+        const [reorderedItem] = items.splice(result.source.index, 1);
+        items.splice(result.destination.index, 0, reorderedItem);
+
+        setItinerary(items as ItineraryItem[]);
+        sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(items));
+      };
 
   return (
-    <ul className="space-y-6">
-      {itinerary.map((item, index) => ( // Pass index to ItineraryItemView
-        // Prefer stable unique item.id if available from the data source
-        <ItineraryItemView key={item.id || `day-${index}`} item={item} index={index} />
-      ))}
-    </ul>
+    <>
+      <DragDropContext onDragEnd={onDragEnd}>
+        <Droppable droppableId="droppable">
+          {(provided, snapshot) => (
+            <ul
+              className="space-y-6"
+              {...provided.droppableProps}
+              ref={provided.innerRef}
+            >
+              {itinerary.map((item, index) => (
+                 <Draggable key={item.day} draggableId={item.day} index={index}>
+                      {(provided) => (
+                        <li
+                          ref={provided.innerRef}
+                          {...provided.draggableProps}
+                          {...provided.dragHandleProps}
+                          className="border-b pb-4 last:border-b-0 last:pb-0"
+                        >
+                          <ItineraryItemView item={item} index={index} />
+                        </li>
+                      )}
+                    </Draggable>
+              ))}
+              {provided.placeholder}
+            </ul>
+          )}
+        </Droppable>
+      </DragDropContext>
+    </>
   );
 };
 

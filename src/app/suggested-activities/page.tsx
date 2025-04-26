@@ -26,7 +26,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 // --- AI Flow Imports ---
-import { generateTravelPlan, type GenerateTravelPlanOutput } from "@/ai/flows/generate-travel-itinerary"; // Import the AI function and the new type
+import { recommendPlaces, type RecommendPlacesOutput } from "@/ai/flows/recommend-places"; // Import the AI function and the new type
 
 // --- Types ---
 // Interface for the data loaded from the previous step
@@ -49,10 +49,10 @@ interface FinalPlanInput extends ActivityPreferencesData {
 }
 
 // Type for selected activities in the new structure
-interface SelectedActivity {
+interface RecommendedPlace {
+  name: string;
   location: string;
   type: string;
-  name: string;
   description: string;
 }
 
@@ -78,9 +78,9 @@ export default function SuggestedActivitiesPage() {
   // --- State ---
   const [activityPrefs, setActivityPrefs] = useState<ActivityPreferencesData | null>(null);
   // State to hold the activities currently displayed (initially from AI) - now nested structure
-  const [displayedActivities, setDisplayedActivities] = useState<ActivitySuggestion[] | null>(null);
+  const [recommendedPlaces, setRecommendedPlaces] = useState<RecommendPlacesOutput | null>(null);
   // State to track which activities the user has checked - now stores structured info
-  const [selectedActivities, setSelectedActivities] = useState<SelectedActivity[]>([]);
+  const [selectedPlaces, setSelectedPlaces] = useState<RecommendedPlace[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true); // Set loading true initially
   const [isSuggestingMore, setIsSuggestingMore] = useState<boolean>(false);
   const [loadingError, setLoadingError] = useState<string | null>(null);
@@ -108,57 +108,17 @@ export default function SuggestedActivitiesPage() {
               destination: prefs.destination,
               arrivalCity: prefs.arrivalCity,
               departureCity: prefs.departureCity,
-              dates: prefs.arrivalDate && prefs.returnDate ? `${prefs.arrivalDate} to ${prefs.returnDate}` : 'Flexible dates', // Construct dates string
-              numberOfDays: prefs.numberOfDays,
-              specificLocations: prefs.specificLocations.join(', ') || prefs.otherLocationInput || undefined, // Combine specific locations and other input
-              desiredActivities: prefs.desiredActivityCategories.join(', ') + (prefs.desiredActivities.length > 0 ? ', ' + prefs.desiredActivities.join(', ') : ''), // Combine categories and specific desires
-              feedback: undefined, // No feedback on initial load
+              activityPreferences: prefs.desiredActivityCategories.join(', ') + (prefs.desiredActivities.length > 0 ? ', ' + prefs.desiredActivities.join(', ') : ''), // Combine categories and specific desires
             };
 
-            console.log("Calling generateTravelPlan with:", aiInput);
+            console.log("Calling recommendPlaces with:", aiInput);
             // Explicitly cast aiInput to GenerateTravelPlanInput, even though it might not match perfectly
-            const result = await generateTravelPlan(aiInput as any);
+            const result = await recommendPlaces(aiInput);
             console.log("Received AI suggestions:", JSON.stringify(result, null, 2)); // Log the structured result
 
             // Transform the AI output to the desired structure
-            if (result && result.plan) {
-              const structuredSuggestions: ActivitySuggestion[] = [];
-
-              result.plan.forEach(planItem => {
-                if (planItem.pointsOfInterest && planItem.pointsOfInterest.length > 0) {
-                  const location = planItem.day; // Use the day as the location, or adjust accordingly
-                  const activityTypes: { type: string; suggestions: { name: string; description: string; }[]; }[] = [];
-
-                  planItem.pointsOfInterest.forEach(poi => {
-                    activityTypes.push({
-                      type: "Point of Interest",
-                      suggestions: [{ name: poi.name, description: poi.description || 'No description available.' }]
-                    });
-                  });
-
-                  structuredSuggestions.push({
-                    location: location,
-                    activityTypes: activityTypes,
-                  });
-                }
-              });
-                setDisplayedActivities(structuredSuggestions);
-            } else {
-                console.error("No plan data received from AI.  Check the AI flow and prompt.");
-                setLoadingError("Failed to fetch activity suggestions. No plan data received from AI.");
-            }
-
-            setSelectedActivities([]); // Start with no activities selected from the new suggestions
-            // Open the first location and its first activity type accordion by default
-            if (result && result.plan && result.plan.length > 0) {
-              const firstLocationId = `location-${result.plan[0].day.replace(/\s+/g, '-').toLowerCase()}`;
-               //  if (result[0].activityTypes.length > 0) {  //check if this is right
-               //    const firstActivityTypeId = `activity-type-${result[0].activityTypes[0].type.replace(/\s+/g, '-').toLowerCase()}`;
-               //    setOpenAccordionItems([firstLocationId, firstActivityTypeId]);
-               //  } else {
-                 setOpenAccordionItems([firstLocationId]);
-               //  }
-            }
+            setRecommendedPlaces(result ?? null);
+            setSelectedPlaces([]);
 
           } catch (error) {
             console.error("Error fetching AI suggestions:", error);
@@ -190,8 +150,8 @@ export default function SuggestedActivitiesPage() {
   // --- Validation Logic ---
   // Basic check: at least one activity must be selected to create an itinerary
   const validateSelection = (): ValidationResult => {
-    if (selectedActivities.length === 0) {
-        return "Please select at least one activity to include in the itinerary.";
+    if (selectedPlaces.length === 0) {
+        return "Please select at least one place to include in the itinerary.";
     }
     return null;
   };
@@ -212,7 +172,7 @@ export default function SuggestedActivitiesPage() {
     setIsLoading(true);
     try {
         // Flatten selected activities into a string list for the final plan input
-        const selectedActivityNamesAndLocations = selectedActivities.map(activity => `${activity.name} (${activity.location})`).join(', ');
+        const selectedActivityNamesAndLocations = selectedPlaces.map(place => `${place.name} (${place.location})`).join(', ');
 
         // Prepare the final data package for the planner page (and potentially final AI call)
         const finalInput: FinalPlanInput = {
@@ -259,89 +219,25 @@ export default function SuggestedActivitiesPage() {
     setIsSuggestingMore(true);
     setLoadingError(null);
     try {
-      // --- Call AI to get more suggestions ---
-      // Pass selected activities as feedback for refinement
-      const selectedActivityNames = selectedActivities.map(activity => activity.name).join(', ');
+          const aiInput = {
+              destination: activityPrefs.destination,
+              arrivalCity: activityPrefs.arrivalCity,
+              departureCity: activityPrefs.departureCity,
+              activityPreferences: activityPrefs.desiredActivityCategories.join(', ') + (activityPrefs.desiredActivities.length > 0 ? ', ' + activityPrefs.desiredActivities.join(', ') : ''),
+          };
 
-      const aiInput = {
-        destination: activityPrefs.destination,
-        arrivalCity: activityPrefs.arrivalCity,
-        departureCity: activityPrefs.departureCity,
-        dates: activityPrefs.arrivalDate && activityPrefs.returnDate ? `${activityPrefs.arrivalDate} to ${activityPrefs.returnDate}` : 'Flexible dates', // Construct dates string
-        numberOfDays: activityPrefs.numberOfDays,
-        specificLocations: activityPrefs.specificLocations.join(', ') || activityPrefs.otherLocationInput || undefined, // Combine specific locations and other input
-        desiredActivities: activityPrefs.desiredActivityCategories.join(', ') + (activityPrefs.desiredActivities.length > 0 ? ', ' + activityPrefs.desiredActivities.join(', ') : ''), // Combine categories and specific desires
-        feedback: selectedActivityNames.length > 0 ? `Suggest more activities. The user has already selected these: ${selectedActivityNames}. Please provide new suggestions that complement these or explore related options based on their original preferences.` : 'Suggest more activities based on the original preferences.',
-      };
+        console.log("Calling recommendPlaces with:", aiInput);
+        // Explicitly cast aiInput to GenerateTravelPlanInput
+        const result = await recommendPlaces(aiInput);
+        console.log("Received more AI suggestions:", JSON.stringify(result, null, 2));
 
-      console.log("Calling generateTravelPlan for more suggestions with:", aiInput);
-      // Explicitly cast aiInput to GenerateTravelPlanInput
-      const result = await generateTravelPlan(aiInput as any);
-      console.log("Received more AI suggestions:", JSON.stringify(result, null, 2));
-
-        // Transform the AI output to the desired structure
-        if (result && result.plan) {
-            const structuredSuggestions: ActivitySuggestion[] = [];
-
-            result.plan.forEach(planItem => {
-                if (planItem.pointsOfInterest && planItem.pointsOfInterest.length > 0) {
-                    const location = planItem.day; // Use the day as the location, or adjust accordingly
-                    const activityTypes: { type: string; suggestions: { name: string; description: string; }[]; }[] = [];
-
-                    planItem.pointsOfInterest.forEach(poi => {
-                        activityTypes.push({
-                            type: "Point of Interest",
-                            suggestions: [{ name: poi.name, description: poi.description || 'No description available.' }]
-                        });
-                    });
-
-                    structuredSuggestions.push({
-                        location: location,
-                        activityTypes: activityTypes,
-                    });
-                }
+            // Append the new results to the existing results.
+            setRecommendedPlaces(prev => {
+                if (!prev) return result ?? null; // If no previous data, just set the new result
+                return [...prev, ...(result ?? [])]; // Append the new results to the previous results.
             });
 
-            // Merge new suggestions with existing ones
-            setDisplayedActivities(prev => {
-                if (!prev) return structuredSuggestions; // If no previous data, just set the new result
 
-                const updatedActivities = [...prev];
-
-                structuredSuggestions.forEach(newLocationGroup => {
-                    const existingLocationIndex = updatedActivities.findIndex(loc => loc.location === newLocationGroup.location);
-
-                    if (existingLocationIndex > -1) {
-                        // Location exists, merge activity types
-                        newLocationGroup.activityTypes.forEach(newActivityTypeGroup => {
-                            const existingActivityTypeIndex = updatedActivities[existingLocationIndex].activityTypes.findIndex(type => type.type === newActivityTypeGroup.type);
-
-                            if (existingActivityTypeIndex > -1) {
-                                // Activity type exists, merge suggestions
-                                const existingSuggestions = updatedActivities[existingLocationIndex].activityTypes[existingActivityTypeIndex].suggestions;
-                                const newSuggestions = newActivityTypeGroup.suggestions;
-                                // Combine and remove duplicates based on name and description
-                                const mergedSuggestions = Array.from(new Map([
-                                    ...existingSuggestions.map(item => [item.name + item.description, item]),
-                                    ...newSuggestions.map(item => [item.name + item.description, item]),
-                                ]).values());
-
-                                updatedActivities[existingLocationIndex].activityTypes[existingActivityTypeIndex].suggestions = mergedSuggestions;
-                            } else {
-                                // New activity type for existing location
-                                updatedActivities[existingLocationIndex].activityTypes.push(newActivityTypeGroup);
-                            }
-                        });
-                    } else {
-                        // New location
-                        updatedActivities.push(newLocationGroup);
-                    }
-                });
-
-                return updatedActivities;
-            });
-
-        }
       toast({
         title: "More Suggestions Added",
         description: "Review the updated list.",
@@ -359,17 +255,17 @@ export default function SuggestedActivitiesPage() {
   };
 
   // Handler for checkbox changes
-  const handleActivitySelectionChange = (activity: SelectedActivity, isChecked: boolean) => {
-    setSelectedActivities(prev => {
+  const handlePlaceSelectionChange = (place: RecommendedPlace, isChecked: boolean) => {
+    setSelectedPlaces(prev => {
       if (isChecked) {
         // Add, ensuring uniqueness based on location, type, and name
-        if (!prev.some(item => item.location === activity.location && item.type === activity.type && item.name === activity.name)) {
-             return [...prev, activity];
+        if (!prev.some(item => item.location === place.location && item.type === place.type && item.name === place.name)) {
+             return [...prev, place];
         }
         return prev; // Already exists, return previous state
       } else {
         // Remove
-        return prev.filter(item => !(item.location === activity.location && item.type === activity.type && item.name === activity.name));
+        return prev.filter(item => !(item.location === place.location && item.type === place.type && item.name === place.name));
       }
     });
   };
@@ -377,12 +273,12 @@ export default function SuggestedActivitiesPage() {
   // --- Derived State ---
   const isCreateDisabled = useMemo(() => {
       return isLoading || isSuggestingMore || !!validateSelection();
-  }, [isLoading, isSuggestingMore, selectedActivities]);
+  }, [isLoading, isSuggestingMore, selectedPlaces]);
 
   const createHintText = useMemo(() => {
       if (isLoading || isSuggestingMore) return null;
       return validateSelection();
-  }, [isLoading, isSuggestingMore, selectedActivities]);
+  }, [isLoading, isSuggestingMore, selectedPlaces]);
 
    // Handler for accordion state change
    const handleAccordionChange = (value: string | string[]) => {
@@ -405,7 +301,7 @@ export default function SuggestedActivitiesPage() {
     );
   }
 
-  if (isLoading && !displayedActivities) {
+  if (isLoading && !recommendedPlaces) {
      return (
        <div className="container mx-auto p-4 md:p-8 max-w-3xl flex justify-center items-center min-h-screen-minus-header">
          <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -418,6 +314,62 @@ export default function SuggestedActivitiesPage() {
       // This case should ideally be caught by loadingError, but as a fallback:
      return null; // Or a specific error state if needed
   }
+
+    const displayPlaces = () => {
+        if (!recommendedPlaces || recommendedPlaces.length === 0) {
+            return <p className="text-muted-foreground italic">No suggestions available based on your preferences.</p>;
+        }
+
+        // Group places by location for better UI
+        const placesByLocation = recommendedPlaces.reduce((acc, place) => {
+            const location = place.location;
+            if (!acc[location]) {
+                acc[location] = [];
+            }
+            acc[location].push(place);
+            return acc;
+        }, {});
+
+        return (
+            <Accordion type="multiple" value={openAccordionItems} onValueChange={handleAccordionChange} className="w-full">
+                {Object.entries(placesByLocation).map(([location, places]) => (
+                    <AccordionItem key={location} value={`location-${location.replace(/\s+/g, '-').toLowerCase()}`}>
+                        <AccordionTrigger className="text-base font-semibold">{location}</AccordionTrigger>
+                        <AccordionContent className="space-y-4 pl-4">
+                            {places.map(place => {
+                                // Create a unique key/id for each suggestion
+                                const activityUniqueKey = `${place.location}-${place.type}-${place.name}`;
+                                const activityId = `activity-${uuidv4()}`;
+                                const isSelected = selectedPlaces.some(item =>
+                                    item.location === place.location &&
+                                    item.type === place.type &&
+                                    item.name === place.name
+                                );
+
+                                return (
+                                    <div key={activityUniqueKey} className="flex items-start space-x-2">
+                                        <Checkbox
+                                            id={activityId}
+                                            checked={isSelected}
+                                            onCheckedChange={(checked) => handlePlaceSelectionChange(place, !!checked)}
+                                            aria-labelledby={`${activityId}-label`}
+                                            className="mt-1"
+                                        />
+                                        <div className="grid gap-1.5 leading-none">
+                                            <Label htmlFor={activityId} id={`${activityId}-label`} className="font-normal cursor-pointer">
+                                                {place.name}
+                                            </Label>
+                                            <p className="text-xs text-muted-foreground">{place.description}</p>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </AccordionContent>
+                    </AccordionItem>
+                ))}
+            </Accordion>
+        );
+    };
 
   // --- Main JSX ---
   return (
@@ -432,60 +384,8 @@ export default function SuggestedActivitiesPage() {
         <CardContent className="space-y-6">
           {/* Suggested Activities List */}
           <div className="space-y-3">
-            <Label className="text-lg font-semibold">Suggested Activities & Points of Interest</Label>
-            {displayedActivities && displayedActivities.length > 0 ? (
-              <Accordion type="multiple" value={openAccordionItems} onValueChange={handleAccordionChange} className="w-full">
-                {displayedActivities.map((locationGroup) => (
-                  <AccordionItem key={locationGroup.location} value={`location-${locationGroup.location.replace(/\s+/g, '-').toLowerCase()}`}>
-                    <AccordionTrigger className="text-base font-semibold">{locationGroup.location}</AccordionTrigger>
-                    <AccordionContent className="space-y-4 pl-4">
-                      {locationGroup.activityTypes.map((activityTypeGroup) => (
-                        <Accordion type="multiple" key={`${locationGroup.location}-${activityTypeGroup.type}`} value={openAccordionItems} onValueChange={handleAccordionChange} className="w-full border-l pl-4">
-                           <AccordionItem value={`activity-type-${activityTypeGroup.type.replace(/\s+/g, '-').toLowerCase()}`}>
-                             <AccordionTrigger className="text-sm font-medium italic">{activityTypeGroup.type}</AccordionTrigger>
-                             <AccordionContent className="space-y-2 pl-4">
-                               {activityTypeGroup.suggestions.map((suggestion) => {
-                                 // Create a unique key/id for each suggestion
-                                 const activityUniqueKey = `${locationGroup.location}-${activityTypeGroup.type}-${suggestion.name}`;
-                                 const activityId = `activity-${uuidv4()}`;
-                                 const isSelected = selectedActivities.some(item =>
-                                     item.location === locationGroup.location &&
-                                     item.type === activityTypeGroup.type &&
-                                     item.name === suggestion.name
-                                 );
-                                 const activityObject = { ...suggestion, location: locationGroup.location, type: activityTypeGroup.type };
-
-                                 return (
-                                   <div key={activityUniqueKey} className="flex items-start space-x-2">
-                                     <Checkbox
-                                       id={activityId}
-                                       checked={isSelected}
-                                       onCheckedChange={(checked) => handleActivitySelectionChange(activityObject, !!checked)}
-                                       aria-labelledby={`${activityId}-label`}
-                                       className="mt-1"
-                                     />
-                                     <div className="grid gap-1.5 leading-none">
-                                         <Label htmlFor={activityId} id={`${activityId}-label`} className="font-normal cursor-pointer">
-                                             {suggestion.name}
-                                         </Label>
-                                         <p className="text-xs text-muted-foreground">{suggestion.description}</p>
-                                     </div>
-                                   </div>
-                                 );
-                               })}
-                             </AccordionContent>
-                           </AccordionItem>
-                        </Accordion>
-                      ))}
-                    </AccordionContent>
-                  </AccordionItem>
-                ))}
-              </Accordion>
-            ) : ( !isLoading &&
-              <p className="text-muted-foreground italic">
-                {isSuggestingMore ? "Loading suggestions..." : "No suggestions available based on your preferences."}
-              </p>
-            )}
+            <Label className="text-lg font-semibold">Suggested Places</Label>
+            {displayPlaces()}
           </div>
 
           {/* Action Buttons & Hints */}
@@ -549,4 +449,3 @@ function LoaderComponent() {
         </>
     );
 }
-
