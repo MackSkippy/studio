@@ -72,7 +72,14 @@ async input => {
     return output!;
   } catch (error: any) {
     console.error("Error calling recommendPlacesPrompt:", error);
-    throw new Error(`Failed to get recommendations from AI: ${error.message}`);
+    let errorMessage = 'Failed to get recommendations from AI';
+    if (error instanceof Error) {
+      errorMessage += `: ${error.message}`;
+    }
+    if (error.message.includes('API key not valid')) {
+      errorMessage = 'Failed to get recommendations from AI: The API key is not valid. Please ensure you have configured the GOOGLE_GENAI_API_KEY environment variable.';
+    }
+    throw new Error(errorMessage);
   }
 }
 );
