@@ -20,7 +20,7 @@ const GenerateTravelPlanInputSchema = z.object({
   destination: z.string().min(1).describe('The primary desired travel destination (e.g., "Paris, France", "Italian Alps").'),
   arrivalCity: z.string().min(1).describe('The city within the destination where the user will arrive to start the trip (e.g., "Rome", "Tokyo Narita").'),
   departureCity: z.string().min(1).describe('The city within the destination from which the user will depart at the end of the trip (e.g., "Florence", "Osaka Kansai").'),
-  dates: z.string().min(1).describe('The travel dates or date range (e.g., "July 10th - July 17th, 2024", "Next Weekend", "2025-08-15 for 7 days").'),
+  dates: z.string().optional().describe('The travel dates or date range (e.g., "July 10th - July 17th, 2024", "Next Weekend", "2025-08-15 for 7 days").'),
   numberOfDays: z
     .number()
     .int()
@@ -265,7 +265,7 @@ export async function generateTravelPlan(
       // This allows the frontend to display the specific error message from the AI/parsing if available.
       if (error instanceof Error) {
         // Add more details to the error message if possible
-        throw new Error(`Error generating final travel plan: ${error.message}`);
+        throw new Error(`Error generating final travel plan: AI failed to generate the detailed travel plan: ${error}`);
       } else {
         // Wrap unknown errors
         throw new Error("An unexpected error occurred during final travel plan generation.");
