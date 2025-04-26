@@ -26,7 +26,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 // --- AI Flow Imports ---
-import { generatePreliminaryTravelPlan, PreliminaryPlanOutput } from "@/ai/flows/generate-travel-itinerary"; // Import the AI function and the new type
+import { generateTravelPlan, type GenerateTravelPlanOutput } from "@/ai/flows/generate-travel-itinerary"; // Import the AI function and the new type
 
 // --- Types ---
 // Interface for the data loaded from the previous step
@@ -65,11 +65,20 @@ const TOAST_DURATION_MS = 5000;
 
 type ValidationResult = string | null;
 
+// Define a type to represent structured activity suggestions
+interface ActivitySuggestion {
+  location: string;
+  activityTypes: {
+    type: string;
+    suggestions: { name: string; description: string; }[];
+  }[];
+}
+
 export default function SuggestedActivitiesPage() {
   // --- State ---
   const [activityPrefs, setActivityPrefs] = useState<ActivityPreferencesData | null>(null);
   // State to hold the activities currently displayed (initially from AI) - now nested structure
-  const [displayedActivities, setDisplayedActivities] = useState<PreliminaryPlanOutput | null>(null);
+  const [displayedActivities, setDisplayedActivities] = useState<ActivitySuggestion[] | null>(null);
   // State to track which activities the user has checked - now stores structured info
   const [selectedActivities, setSelectedActivities] = useState<SelectedActivity[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true); // Set loading true initially
@@ -106,21 +115,49 @@ export default function SuggestedActivitiesPage() {
               feedback: undefined, // No feedback on initial load
             };
 
-            console.log("Calling generatePreliminaryTravelPlan with:", aiInput);
-            const result = await generatePreliminaryTravelPlan(aiInput);
+            console.log("Calling generateTravelPlan with:", aiInput);
+            // Explicitly cast aiInput to GenerateTravelPlanInput, even though it might not match perfectly
+            const result = await generateTravelPlan(aiInput as any);
             console.log("Received AI suggestions:", JSON.stringify(result, null, 2)); // Log the structured result
 
-            setDisplayedActivities(result);
+            // Transform the AI output to the desired structure
+            if (result && result.plan) {
+              const structuredSuggestions: ActivitySuggestion[] = [];
+
+              result.plan.forEach(planItem => {
+                if (planItem.pointsOfInterest && planItem.pointsOfInterest.length > 0) {
+                  const location = planItem.day; // Use the day as the location, or adjust accordingly
+                  const activityTypes: { type: string; suggestions: { name: string; description: string; }[]; }[] = [];
+
+                  planItem.pointsOfInterest.forEach(poi => {
+                    activityTypes.push({
+                      type: "Point of Interest",
+                      suggestions: [{ name: poi.name, description: poi.description || 'No description available.' }]
+                    });
+                  });
+
+                  structuredSuggestions.push({
+                    location: location,
+                    activityTypes: activityTypes,
+                  });
+                }
+              });
+                setDisplayedActivities(structuredSuggestions);
+            } else {
+                console.error("No plan data received from AI.  Check the AI flow and prompt.");
+                setLoadingError("Failed to fetch activity suggestions. No plan data received from AI.");
+            }
+
             setSelectedActivities([]); // Start with no activities selected from the new suggestions
             // Open the first location and its first activity type accordion by default
-            if (result && result.length > 0) {
-              const firstLocationId = `location-${result[0].location.replace(/\s+/g, '-').toLowerCase()}`;
-               if (result[0].activityTypes.length > 0) {
-                 const firstActivityTypeId = `activity-type-${result[0].activityTypes[0].type.replace(/\s+/g, '-').toLowerCase()}`;
-                 setOpenAccordionItems([firstLocationId, firstActivityTypeId]);
-               } else {
+            if (result && result.plan && result.plan.length > 0) {
+              const firstLocationId = `location-${result.plan[0].day.replace(/\s+/g, '-').toLowerCase()}`;
+               //  if (result[0].activityTypes.length > 0) {  //check if this is right
+               //    const firstActivityTypeId = `activity-type-${result[0].activityTypes[0].type.replace(/\s+/g, '-').toLowerCase()}`;
+               //    setOpenAccordionItems([firstLocationId, firstActivityTypeId]);
+               //  } else {
                  setOpenAccordionItems([firstLocationId]);
-               }
+               //  }
             }
 
           } catch (error) {
@@ -237,49 +274,74 @@ export default function SuggestedActivitiesPage() {
         feedback: selectedActivityNames.length > 0 ? `Suggest more activities. The user has already selected these: ${selectedActivityNames}. Please provide new suggestions that complement these or explore related options based on their original preferences.` : 'Suggest more activities based on the original preferences.',
       };
 
-      console.log("Calling generatePreliminaryTravelPlan for more suggestions with:", aiInput);
-      const result = await generatePreliminaryTravelPlan(aiInput);
+      console.log("Calling generateTravelPlan for more suggestions with:", aiInput);
+      // Explicitly cast aiInput to GenerateTravelPlanInput
+      const result = await generateTravelPlan(aiInput as any);
       console.log("Received more AI suggestions:", JSON.stringify(result, null, 2));
 
-      // Merge new suggestions with existing ones
-      setDisplayedActivities(prev => {
-        if (!prev) return result; // If no previous data, just set the new result
+        // Transform the AI output to the desired structure
+        if (result && result.plan) {
+            const structuredSuggestions: ActivitySuggestion[] = [];
 
-        const updatedActivities = [...prev];
+            result.plan.forEach(planItem => {
+                if (planItem.pointsOfInterest && planItem.pointsOfInterest.length > 0) {
+                    const location = planItem.day; // Use the day as the location, or adjust accordingly
+                    const activityTypes: { type: string; suggestions: { name: string; description: string; }[]; }[] = [];
 
-        result.forEach(newLocationGroup => {
-          const existingLocationIndex = updatedActivities.findIndex(loc => loc.location === newLocationGroup.location);
+                    planItem.pointsOfInterest.forEach(poi => {
+                        activityTypes.push({
+                            type: "Point of Interest",
+                            suggestions: [{ name: poi.name, description: poi.description || 'No description available.' }]
+                        });
+                    });
 
-          if (existingLocationIndex > -1) {
-            // Location exists, merge activity types
-            newLocationGroup.activityTypes.forEach(newActivityTypeGroup => {
-              const existingActivityTypeIndex = updatedActivities[existingLocationIndex].activityTypes.findIndex(type => type.type === newActivityTypeGroup.type);
-
-              if (existingActivityTypeIndex > -1) {
-                // Activity type exists, merge suggestions
-                const existingSuggestions = updatedActivities[existingLocationIndex].activityTypes[existingActivityTypeIndex].suggestions;
-                const newSuggestions = newActivityTypeGroup.suggestions;
-                // Combine and remove duplicates based on name and description
-                const mergedSuggestions = Array.from(new Map([
-                    ...existingSuggestions.map(item => [item.name + item.description, item]),
-                    ...newSuggestions.map(item => [item.name + item.description, item]),
-                ]).values());
-
-                updatedActivities[existingLocationIndex].activityTypes[existingActivityTypeIndex].suggestions = mergedSuggestions;
-              } else {
-                // New activity type for existing location
-                updatedActivities[existingLocationIndex].activityTypes.push(newActivityTypeGroup);
-              }
+                    structuredSuggestions.push({
+                        location: location,
+                        activityTypes: activityTypes,
+                    });
+                }
             });
-          } else {
-            // New location
-            updatedActivities.push(newLocationGroup);
-          }
-        });
 
-        return updatedActivities;
-      });
+            // Merge new suggestions with existing ones
+            setDisplayedActivities(prev => {
+                if (!prev) return structuredSuggestions; // If no previous data, just set the new result
 
+                const updatedActivities = [...prev];
+
+                structuredSuggestions.forEach(newLocationGroup => {
+                    const existingLocationIndex = updatedActivities.findIndex(loc => loc.location === newLocationGroup.location);
+
+                    if (existingLocationIndex > -1) {
+                        // Location exists, merge activity types
+                        newLocationGroup.activityTypes.forEach(newActivityTypeGroup => {
+                            const existingActivityTypeIndex = updatedActivities[existingLocationIndex].activityTypes.findIndex(type => type.type === newActivityTypeGroup.type);
+
+                            if (existingActivityTypeIndex > -1) {
+                                // Activity type exists, merge suggestions
+                                const existingSuggestions = updatedActivities[existingLocationIndex].activityTypes[existingActivityTypeIndex].suggestions;
+                                const newSuggestions = newActivityTypeGroup.suggestions;
+                                // Combine and remove duplicates based on name and description
+                                const mergedSuggestions = Array.from(new Map([
+                                    ...existingSuggestions.map(item => [item.name + item.description, item]),
+                                    ...newSuggestions.map(item => [item.name + item.description, item]),
+                                ]).values());
+
+                                updatedActivities[existingLocationIndex].activityTypes[existingActivityTypeIndex].suggestions = mergedSuggestions;
+                            } else {
+                                // New activity type for existing location
+                                updatedActivities[existingLocationIndex].activityTypes.push(newActivityTypeGroup);
+                            }
+                        });
+                    } else {
+                        // New location
+                        updatedActivities.push(newLocationGroup);
+                    }
+                });
+
+                return updatedActivities;
+            });
+
+        }
       toast({
         title: "More Suggestions Added",
         description: "Review the updated list.",
@@ -335,7 +397,7 @@ export default function SuggestedActivitiesPage() {
           <CardHeader><CardTitle className="text-red-600">Error</CardTitle></CardHeader>
           <CardContent>
             <p className="text-red-600">{loadingError}</p>
-            <Button onClick={() => router.push('/locations-and-dates')} className="mt-4">Start Over</Button>
+            <Button onClick={() => router.push('/travel-preferences')} className="mt-4">Start Over</Button>
           </CardContent>
         </Card>
         <Toaster />
@@ -476,5 +538,15 @@ export default function SuggestedActivitiesPage() {
       <Toaster />
     </div>
   );
+}
+
+// Separate component to ensure it's only used client-side
+function LoaderComponent() {
+    return (
+        <>
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <span className="ml-2">Loading previous data...</span>
+        </>
+    );
 }
 
