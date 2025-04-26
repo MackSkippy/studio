@@ -29,21 +29,24 @@ import { Toaster } from "@/components/ui/toaster";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 import {
-  generatePreliminaryTravelPlan,
+  generateTravelPlan,
   type GenerateTravelPlanInput,
-  type PreliminaryPlanOutput,
 } from "@/ai/flows/generate-travel-itinerary";
 
-import { cityLookup } from "@/data/city-lookup";
-
 import { ACTIVITIES } from "@/data/activities";
+import countryData from "@/data/countries.json";
 
-const SESSION_STORAGE_PRELIMINARY_KEY = "preliminaryPlan";
 const SESSION_STORAGE_TRAVEL_PREFERENCES_KEY = "travelPreferences"; // Store preferences for generating final itinerary
 const TOAST_DESTRUCTIVE_VARIANT = "destructive" as const;
 const TOAST_DEFAULT_VARIANT = "default" as const;
 const TOAST_DURATION_MS = 5000;
 
+interface CityData {
+  [countryCode: string]: string[];
+}
+
+// Extract the cities
+const cityData: CityData = countryData.countryCodeMap;
 const ActivitiesGrid = ({ selectedActivities, toggleActivity }: { selectedActivities: string[], toggleActivity: (activity: string) => void }) => (
   <div className="grid grid-cols-3 gap-2">
     {ACTIVITIES.map((activity) => (
@@ -61,29 +64,6 @@ const ActivitiesGrid = ({ selectedActivities, toggleActivity }: { selectedActivi
   </div>
 );
 
-const LocationCheckboxes = ({ availableCities, specificLocations, toggleSpecificLocation }: { availableCities: string[], specificLocations: string[], toggleSpecificLocation: (location: string) => void }) => (
-  <ScrollArea className="h-32 w-full rounded-md border p-2">
-    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-      {availableCities.map((city) => {
-        const cityId = `city-${city.replace(/\s+/g, '-').toLowerCase()}`;
-        return (
-          <div key={cityId} className="flex items-center space-x-2">
-            <Checkbox
-              id={cityId}
-              checked={specificLocations.includes(city)}
-              onCheckedChange={() => toggleSpecificLocation(city)}
-              aria-labelledby={`${cityId}-label`}
-            />
-            <Label htmlFor={cityId} id={`${cityId}-label`} className="font-normal cursor-pointer">
-              {city}
-            </Label>
-          </div>
-        );
-      })}
-    </div>
-  </ScrollArea>
-);
-
 export default function TravelPreferences() {
   const router = useRouter();
   const { toast } = useToast();
@@ -96,23 +76,20 @@ export default function TravelPreferences() {
   const [numberOfDays, setNumberOfDays] = useState<number | undefined>(undefined); // number of days
   const [specificLocations, setSpecificLocations] = useState<string[]>([]);
   const [otherLocationInput, setOtherLocationInput] = useState("");
-  const [availableCities, setAvailableCities] = useState<string[]>([]);
   const [selectedActivities, setSelectedActivities] = useState<string[]>([]);
 
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleDestinationChange = useCallback((newDestinationValue: string) => {
-    setDestination(newDestinationValue);
-    const cities = cityLookup(newDestinationValue);
-    setAvailableCities(cities);
-    setSpecificLocations([]);
-    setOtherLocationInput("");
-  }, []);
+  const handleDestinationChange = (newDestinationValue: string) => {
+      setDestination(newDestinationValue);
+      setSpecificLocations([]); // Clear specific locations when destination changes
+      setOtherLocationInput(""); // Clear other location input when destination changes
+  };
 
   const toggleSpecificLocation = useCallback((location: string) => {
-    setSpecificLocations((prev) =>
-      prev.includes(location) ? prev.filter((val) => val !== location) : [...prev, location]
-    );
+      setSpecificLocations((prev) =>
+          prev.includes(location) ? prev.filter((val) => val !== location) : [...prev, location]
+      );
   }, []);
 
   const toggleActivity = useCallback((activity: string) => {
@@ -152,16 +129,13 @@ export default function TravelPreferences() {
       //Store travel preferences to reuse them on the review page
       sessionStorage.setItem(SESSION_STORAGE_TRAVEL_PREFERENCES_KEY, JSON.stringify(input));
 
-      const preliminaryPlan: PreliminaryPlanOutput = await generatePreliminaryTravelPlan(input);
-      sessionStorage.setItem(SESSION_STORAGE_PRELIMINARY_KEY, JSON.stringify(preliminaryPlan));
-
       toast({
-        title: "Success",
-        description: "Preliminary plan generated! Review and approve to continue.",
+        title: "Generating Plan",
+        description: "Sit tight and let's go",
         variant: TOAST_DEFAULT_VARIANT,
         duration: TOAST_DURATION_MS,
       });
-      router.push("/review-plan");
+      router.push("/planner");
     } catch (error: any) {
       console.error("Error generating travel plan:", error);
       toast({
@@ -174,6 +148,16 @@ export default function TravelPreferences() {
       setIsLoading(false);
     }
   };
+
+  const getCitiesForDestination = (dest: string): string[] => {
+    const destLower = dest.trim().toLowerCase();
+    const standardizedDestination =
+      countryData.alternativeCountryNames[destLower] || destLower;
+    return cityData[standardizedDestination] || [];
+  };
+
+  const availableCities = getCitiesForDestination(destination);
+  const hasAvailableCities = availableCities && availableCities.length > 0;
 
   const today = new Date();
 
@@ -201,7 +185,7 @@ export default function TravelPreferences() {
               />
             </div>
 
-           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Arrival City */}
               <div>
                 <Label htmlFor="arrivalCity" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Destination Arrival City *</Label>
@@ -293,6 +277,7 @@ export default function TravelPreferences() {
                 </Popover>
                 <p className="text-xs text-muted-foreground">Optional. Use if specific date is known.</p>
               </div>
+
               {/* Number of Days */}
               <div>
                 <Label htmlFor="numberOfDays" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Number of Days</Label>
@@ -303,17 +288,29 @@ export default function TravelPreferences() {
                   onChange={(e) => setNumberOfDays(Number(e.target.value))}
                   placeholder="e.g., 7"
                 />
-                 <p className="text-xs text-muted-foreground">Use if no Return Date. Clears 'Return Date'.</p>
+                <p className="text-xs text-muted-foreground">Use if no Return Date. Clears 'Return Date'.</p>
               </div>
             </div>
+
             <div>
               <Label htmlFor="specificLocations" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Specific Locations</Label>
-              {availableCities.length > 0 ? (
-                <LocationCheckboxes
-                  availableCities={availableCities}
-                  specificLocations={specificLocations}
-                  toggleSpecificLocation={toggleSpecificLocation}
-                />
+              {hasAvailableCities ? (
+                <ScrollArea className="h-32 w-full rounded-md border p-2">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {availableCities.map((city) => (
+                      <div key={city} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`city-${city}`}
+                          checked={specificLocations.includes(city)}
+                          onCheckedChange={() => toggleSpecificLocation(city)}
+                        />
+                        <Label htmlFor={`city-${city}`} className="font-normal">
+                          {city}
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
               ) : (
                 <Input
                   type="text"

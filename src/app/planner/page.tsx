@@ -260,7 +260,7 @@ export default function TravelPlanner() {
   const [isRefining, setIsRefining] = useState<boolean>(false); // Loading during refinement API call
   const [error, setError] = useState<string | null>(null); // General error (initial load, unexpected)
   const [refinementError, setRefinementError] = useState<string | null>(null); // Specific error for refinement
-
+  const [isGeneratedItinerary, setIsGeneratedItinerary] = useState<boolean>(false);
 
   // --- Effects ---
   // Load initial itinerary from session storage on mount
@@ -350,10 +350,42 @@ export default function TravelPlanner() {
     }
   }, [itinerary, feedback]); // Dependencies for the callback
 
+  const handleGenerateItinerary = useCallback(async () => {
+    setIsLoadingInitial(true);
+    setError(null); // Clear any existing errors
+
+    try {
+      const storedPrefs = sessionStorage.getItem(SESSION_STORAGE_TRAVEL_PREFERENCES_KEY);
+
+      if (!storedPrefs) {
+        setError("No travel preferences found. Please fill out the form again.");
+        return;
+      }
+
+      const parsedPrefs = JSON.parse(storedPrefs);
+
+      const result = await generateTravelPlan(parsedPrefs);
+
+      if (result?.plan) {
+        setItinerary(result.plan);
+        sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(result.plan));
+        setIsGeneratedItinerary(true);
+      } else {
+        setError("Failed to generate itinerary. Please try again.");
+      }
+    } catch (apiError) {
+      console.error("Error calling generateTravelItinerary API:", apiError);
+      const message = apiError instanceof Error ? apiError.message : 'An unknown error occurred.';
+      setError(`Failed to generate itinerary: ${message}`);
+    } finally {
+      setIsLoadingInitial(false);
+    }
+  }, []);
 
   // --- Derived State ---
   const showRefinementForm = Array.isArray(itinerary) && itinerary.length > 0;
   const isRefinementDisabled = isRefining || isLoadingInitial; // Disable form during any loading state
+  const isGenerateItineraryDisabled = isLoadingInitial;
 
   // --- Render ---
   return (
@@ -378,11 +410,26 @@ export default function TravelPlanner() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <ItineraryDisplay
-              itinerary={itinerary}
-              isLoading={isLoadingInitial}
-              error={null} // Initial load errors handled above the card
-            />
+          {isGeneratedItinerary ? (
+              <ItineraryDisplay
+                itinerary={itinerary}
+                isLoading={isLoadingInitial}
+                error={null} // Initial load errors handled above the card
+              />
+            ) : (
+              <div className="flex justify-center">
+                <Button onClick={handleGenerateItinerary} disabled={isGenerateItineraryDisabled}>
+                  {isLoadingInitial ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Loading...
+                    </>
+                  ) : (
+                    "Generate Itinerary"
+                  )}
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
 
