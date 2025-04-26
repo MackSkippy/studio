@@ -32,13 +32,13 @@ const TOAST_DESTRUCTIVE_VARIANT = "destructive" as const;
 const TOAST_DEFAULT_VARIANT = "default" as const;
 const TOAST_DURATION_MS = 5000;
 
+interface ReviewPlanProps { }
+
 interface PointOfInterest {
   name: string;
   location: string;
   description: string;
 }
-
-interface ReviewPlanProps { }
 
 const ReviewPlan: React.FC<ReviewPlanProps> = () => {
   const [isLoading, setIsLoading] = useState(false);
