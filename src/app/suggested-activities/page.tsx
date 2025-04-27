@@ -234,7 +234,11 @@ export default function SuggestedActivitiesPage() {
             // Append the new results to the existing results.
             setRecommendedPlaces(prev => {
                 if (!prev) return result ?? null; // If no previous data, just set the new result
-                return [...prev, ...(result ?? [])]; // Append the new results to the previous results.
+                
+                const existingKeys = new Set((prev as RecommendPlacesOutput).map(item => `${item.location}-${item.type}-${item.name}`));
+                const newPlaces = (result ?? []).filter(item => !existingKeys.has(`${item.location}-${item.type}-${item.name}`));
+                
+                return [...prev, ...newPlaces];
             });
 
 
@@ -321,7 +325,7 @@ export default function SuggestedActivitiesPage() {
         }
 
         // Group places by location for better UI
-        const placesByLocation = recommendedPlaces.reduce((acc, place) => {
+        const placesByLocation = (recommendedPlaces ?? []).reduce((acc, place) => {
             const location = place.location;
             if (!acc[location]) {
                 acc[location] = [];
@@ -338,8 +342,8 @@ export default function SuggestedActivitiesPage() {
                         <AccordionContent className="space-y-4 pl-4">
                             {places.map(place => {
                                 // Create a unique key/id for each suggestion
-                                const activityUniqueKey = `${place.location}-${place.type}-${place.name}-${uuidv4()}`;
-                                const activityId = `activity-${uuidv4()}`;
+                                const activityUniqueKey = `${place.location}-${place.type}-${place.name}`;
+                                const activityId = `activity-${activityUniqueKey}`;
                                 const isSelected = selectedPlaces.some(item =>
                                     item.location === place.location &&
                                     item.type === place.type &&
@@ -347,7 +351,7 @@ export default function SuggestedActivitiesPage() {
                                 );
 
                                 return (
-                                    <div key={activityUniqueKey} className="flex items-start space-x-2">
+                                    <div key={activityId} className="flex items-start space-x-2">
                                         <Checkbox
                                             id={activityId}
                                             checked={isSelected}
@@ -431,7 +435,7 @@ export default function SuggestedActivitiesPage() {
                   {createHintText}
                 </p>
               )}
-             </div>
+            </div>
           </div>
         </CardContent>
       </Card>
