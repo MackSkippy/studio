@@ -162,18 +162,18 @@ export default function TravelPreferences() {
   const today = new Date();
 
   return (
-    
+    <div className="container mx-auto p-4 md:p-8 max-w-3xl">
       <Toaster />
       <Card>
         <CardHeader>
-          <CardTitle className="text-2xl font-bold">Plan Your Next Adventure</CardTitle>
+          <CardTitle className="text-2xl font-bold">Travel Preferences</CardTitle>
           <CardDescription>
             Fill out the form below to generate a personalized itinerary. Fields marked with * are required.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <form onSubmit={handleSubmit} className="space-y-4">
-            
+            <div>
               <Label htmlFor="destination" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Destination *</Label>
               <Input
                 type="text"
@@ -183,11 +183,11 @@ export default function TravelPreferences() {
                 placeholder="e.g., Tokyo, Japan"
                 required
               />
-            
+            </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Arrival City */}
-              
+              <div>
                 <Label htmlFor="arrivalCity" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Destination Arrival City *</Label>
                 <Input
                   type="text"
@@ -198,10 +198,10 @@ export default function TravelPreferences() {
                   disabled={!destination.trim()}
                   required
                 />
-              
+              </div>
 
               {/* Destination Departure City */}
-              
+              <div>
                 <Label htmlFor="departureCity" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Destination Departure City *</Label>
                 <Input
                   type="text"
@@ -212,13 +212,13 @@ export default function TravelPreferences() {
                   disabled={!destination.trim()}
                   required
                 />
-              
+              </div>
             </div>
 
             {/* Dates / Duration */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
               {/* Arrival Date */}
-              
+              <div>
                 <Label htmlFor="arrivalDatePopover">Arrival Date</Label>
                 <Popover>
                   <PopoverTrigger asChild>
@@ -245,10 +245,10 @@ export default function TravelPreferences() {
                   </PopoverContent>
                 </Popover>
                 <p className="text-xs text-muted-foreground">Optional. Use if specific date is known.</p>
-              
+              </div>
 
               {/* Return Date */}
-              
+              <div>
                 <Label htmlFor="returnDatePopover">Return Date</Label>
                 <Popover>
                   <PopoverTrigger asChild>
@@ -276,10 +276,10 @@ export default function TravelPreferences() {
                   </PopoverContent>
                 </Popover>
                 <p className="text-xs text-muted-foreground">Optional. Use if specific date is known.</p>
-              
+              </div>
 
               {/* Number of Days */}
-              
+              <div>
                 <Label htmlFor="numberOfDays" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Number of Days</Label>
                 <Input
                   type="number"
@@ -289,16 +289,16 @@ export default function TravelPreferences() {
                   placeholder="e.g., 7"
                 />
                 <p className="text-xs text-muted-foreground">Use if no Return Date. Clears 'Return Date'.</p>
-              
+              </div>
             </div>
 
-            
+            <div>
               <Label htmlFor="specificLocations" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Specific Locations</Label>
               {hasAvailableCities ? (
                 <ScrollArea className="h-32 w-full rounded-md border p-2">
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                     {availableCities.map((city) => (
-                      
+                      <div key={city} className="flex items-center space-x-2">
                         <Checkbox
                           id={`city-${city}`}
                           checked={specificLocations.includes(city)}
@@ -307,7 +307,7 @@ export default function TravelPreferences() {
                         <Label htmlFor={`city-${city}`} className="font-normal">
                           {city}
                         </Label>
-                      
+                      </div>
                     ))}
                   </div>
                 </ScrollArea>
@@ -321,15 +321,15 @@ export default function TravelPreferences() {
                   disabled={!destination.trim()}
                 />
               )}
-            
+            </div>
 
-            
+            <div>
               <Label htmlFor="activities" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Desired Activities</Label>
               <ActivitiesGrid
                 selectedActivities={selectedActivities}
                 toggleActivity={toggleActivity}
               />
-            
+            </div>
 
             <Button type="submit" disabled={isLoading}>
               {isLoading ? (
@@ -344,6 +344,7 @@ export default function TravelPreferences() {
           </form>
         </CardContent>
       </Card>
-    
+    </div>
   );
 }
+
