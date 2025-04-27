@@ -338,7 +338,7 @@ export default function SuggestedActivitiesPage() {
                         <AccordionContent className="space-y-4 pl-4">
                             {places.map(place => {
                                 // Create a unique key/id for each suggestion
-                                const activityUniqueKey = `${place.location}-${place.type}-${place.name}`;
+                                const activityUniqueKey = `${place.location}-${place.type}-${place.name}-${uuidv4()}`;
                                 const activityId = `activity-${uuidv4()}`;
                                 const isSelected = selectedPlaces.some(item =>
                                     item.location === place.location &&
